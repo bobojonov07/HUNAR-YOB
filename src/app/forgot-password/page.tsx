@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react";
@@ -6,38 +7,44 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUsers } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { Mail, ArrowLeft, Key } from "lucide-react";
+import { Mail, ArrowLeft, Key, Send, Loader2, CheckCircle2 } from "lucide-react";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { useAuth } from "@/firebase";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [step, setStep] = useState(1);
-  const [foundPassword, setFoundPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
 
-  const handleRecover = (e: React.FormEvent) => {
+  const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const users = getUsers();
-    const user = users.find(u => u.email === email);
+    if (!email.trim()) {
+      toast({ title: "Хатогӣ", description: "Почтаро ворид кунед", variant: "destructive" });
+      return;
+    }
 
-    if (user) {
-      setFoundPassword(user.password || "");
-      setStep(2);
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSent(true);
       toast({
-        title: "Ёфт шуд",
-        description: "Маълумоти воридшавии шумо барқарор шуд",
+        title: "Паём фиристода шуд",
+        description: "Дастурамал барои барқарории рамз ба почтаи шумо рафт.",
       });
-    } else {
+    } catch (error: any) {
       toast({
         title: "Хатогӣ",
-        description: "Корбар бо ин почта ёфт нашуд",
+        description: "Корбар бо ин почта ёфт нашуд ё хатогӣ дар сервер рӯй дод.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,53 +52,53 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <div className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-border shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline text-secondary">Барқарории рамз</CardTitle>
-            <CardDescription>
-              {step === 1 
-                ? "Почтаи худро ворид кунед, то рамзатонро бинед" 
-                : "Рамзи шумо бо муваффақият ёфт шуд"}
+        <Card className="w-full max-w-md border-none shadow-3xl rounded-[3rem] overflow-hidden bg-white">
+          <CardHeader className="text-center pt-16 pb-10 bg-muted/10">
+            <div className="mx-auto h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+              <Key className="h-10 w-10 text-primary" />
+            </div>
+            <CardTitle className="text-3xl font-black font-headline text-secondary tracking-tighter uppercase leading-none">БАРҚАРОРИИ РАМЗ</CardTitle>
+            <CardDescription className="font-bold text-[10px] uppercase tracking-widest mt-4">
+              {sent ? "ПАЁМ БО МУВАФФАҚИЯТ ФИРИСТОДА ШУД" : "ПОЧТАИ ХУДРО ВОРИД КУНЕД"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {step === 1 ? (
-              <form onSubmit={handleRecover} className="space-y-4">
+          <CardContent className="space-y-6 pt-10 px-10">
+            {!sent ? (
+              <form onSubmit={handleRecover} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Почтаи электронӣ</Label>
+                  <Label className="font-black text-xs uppercase tracking-widest opacity-60">Почтаи электронӣ</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
                     <Input 
                       id="email" 
                       type="email" 
                       placeholder="example@mail.tj" 
-                      className="pl-10"
+                      className="pl-12 h-14 rounded-2xl bg-muted/20 border-muted font-bold"
                       value={email} 
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white">Барқарор кардан</Button>
+                <Button disabled={loading} type="submit" className="w-full bg-primary h-16 text-lg font-black rounded-[2rem] shadow-2xl transition-all hover:scale-[1.02] uppercase tracking-widest">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : <><Send className="mr-2 h-5 w-5" /> ФИРИСТОДАН</>}
+                </Button>
               </form>
             ) : (
-              <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl text-center space-y-3">
-                <Key className="h-12 w-12 text-primary mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground uppercase font-bold tracking-widest">Рамзи шумо:</p>
-                <p className="text-3xl font-black text-secondary tracking-tighter">{foundPassword}</p>
-                <p className="text-xs text-muted-foreground pt-4">Шумо метавонед акнун ворид шавед.</p>
+              <div className="text-center space-y-6 py-4">
+                <div className="mx-auto h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="h-12 w-12 text-green-600" />
+                </div>
+                <p className="text-sm font-medium leading-relaxed text-muted-foreground italic">
+                  Мо ба почтаи <b>{email}</b> пайванд барои ивази рамзро фиристодем. Лутфан паёмҳои худро (аз ҷумла бахши Spam)-ро санҷед.
+                </p>
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            {step === 2 && (
-              <Button asChild className="w-full bg-secondary hover:bg-secondary/90">
-                <Link href="/login">Воридшавӣ</Link>
-              </Button>
-            )}
-            <Button variant="ghost" asChild className="w-full text-muted-foreground">
+          <CardFooter className="flex flex-col space-y-4 pb-16 px-10">
+            <Button variant="ghost" asChild className="w-full text-muted-foreground font-black text-[10px] uppercase tracking-widest">
               <Link href="/login">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Бозгашт ба воридшавӣ
+                БОЗГАШТ БА ВОРИДШАВӢ
               </Link>
             </Button>
           </CardFooter>

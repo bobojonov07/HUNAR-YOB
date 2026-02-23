@@ -14,13 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Settings, LogOut, Plus, MapPin, Camera, ShieldAlert, ShieldCheck, Clock, Crown, Zap, ChevronLeft, Wallet, FileCheck, Loader2, Heart, CheckCircle2, Trash2, Calendar, AlertCircle, Edit3 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings, LogOut, Plus, MapPin, Camera, ShieldAlert, ShieldCheck, Clock, Crown, Zap, ChevronLeft, Wallet, FileCheck, Loader2, Heart, CheckCircle2, Trash2, Calendar, AlertCircle, Edit3, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { doc, updateDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { useAuth } from "@/firebase";
 import { compressImage } from "@/lib/utils";
 
@@ -54,13 +55,16 @@ export default function Profile() {
 
   // Форма таҳрир
   const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
   const [editRegion, setEditRegion] = useState("");
+  
+  // Ивази рамз
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
     if (profile) {
       setEditName(profile.name || "");
-      setEditPhone(profile.phone || "");
       setEditRegion(profile.region || "");
     }
   }, [profile]);
@@ -98,7 +102,6 @@ export default function Profile() {
     setIsSaving(true);
     updateDoc(userProfileRef, {
       name: editName,
-      phone: editPhone,
       region: editRegion
     })
     .then(() => {
@@ -109,10 +112,36 @@ export default function Profile() {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: userProfileRef.path,
         operation: 'update',
-        requestResourceData: { name: editName, phone: editPhone, region: editRegion }
+        requestResourceData: { name: editName, region: editRegion }
       }));
     })
     .finally(() => setIsSaving(false));
+  };
+
+  const handleChangePassword = async () => {
+    if (!auth.currentUser || !oldPassword || !newPassword) {
+      toast({ title: "Хатогӣ", description: "Майдонҳоро пур кунед", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Хатогӣ", description: "Рамзи нав бояд камаш 6 аломат бошад", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const credential = EmailAuthProvider.credential(auth.currentUser.email!, oldPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updatePassword(auth.currentUser, newPassword);
+      toast({ title: "Муваффақият", description: "Рамзи шумо навсозӣ шуд" });
+      setOldPassword("");
+      setNewPassword("");
+      setIsSettingsOpen(false);
+    } catch (error: any) {
+      toast({ title: "Хатогӣ", description: "Рамзи кӯҳна нодуруст аст", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteListing = async (listingId: string) => {
@@ -133,13 +162,6 @@ export default function Profile() {
     router.push("/");
   };
 
-  const handleWalletClick = () => {
-    toast({
-      title: "Ҳамён",
-      description: "Ин бахш дар оянда фаъол мешавад",
-    });
-  };
-
   if (authLoading || !profile) return <div className="min-h-screen flex items-center justify-center">Боргузорӣ...</div>;
 
   return (
@@ -158,35 +180,71 @@ export default function Profile() {
                 <Settings className="mr-2 h-5 w-5" /> ТАНЗИМОТ
               </Button>
             </DialogTrigger>
-            <DialogContent className="rounded-[2.5rem] p-10 border-none shadow-3xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ТАҲРИРИ ПРОФИЛ</DialogTitle>
-                <DialogDescription className="font-medium text-xs">Маълумоти шахсии худро навсозӣ кунед.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6 pt-6">
-                <div className="space-y-2">
-                  <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Ному насаб</Label>
-                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-muted font-bold" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рақами телефон</Label>
-                  <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-muted font-bold" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Минтақа</Label>
-                  <Select value={editRegion} onValueChange={setEditRegion}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-muted font-bold">
-                      <SelectValue placeholder="Интихоби минтақа" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl">
-                      {ALL_REGIONS.map(r => <SelectItem key={r} value={r} className="font-bold">{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleUpdateProfile} disabled={isSaving} className="w-full bg-primary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl">
-                  {isSaving ? <Loader2 className="animate-spin h-6 w-6" /> : "САБТ КАРДАН"}
-                </Button>
-              </div>
+            <DialogContent className="rounded-[2.5rem] p-0 border-none shadow-3xl overflow-hidden max-w-md">
+              <Tabs defaultValue="profile" className="w-full">
+                <TabsList className="w-full h-16 rounded-none bg-muted/20 border-b p-1">
+                  <TabsTrigger value="profile" className="flex-1 rounded-none font-black text-[10px] uppercase tracking-widest">Профил</TabsTrigger>
+                  <TabsTrigger value="security" className="flex-1 rounded-none font-black text-[10px] uppercase tracking-widest">Амният</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="profile" className="p-10 space-y-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ТАҲРИРИ ПРОФИЛ</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Ному насаб</Label>
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-muted font-bold" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рақами телефон (таҳрир намешавад)</Label>
+                      <Input value={profile.phone} disabled className="h-14 rounded-2xl bg-muted/10 border-muted font-bold opacity-50 cursor-not-allowed" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Минтақа</Label>
+                      <Select value={editRegion} onValueChange={setEditRegion}>
+                        <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-muted font-bold">
+                          <SelectValue placeholder="Интихоби минтақа" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl">
+                          {ALL_REGIONS.map(r => <SelectItem key={r} value={r} className="font-bold">{r}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={handleUpdateProfile} disabled={isSaving} className="w-full bg-primary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl mt-4">
+                      {isSaving ? <Loader2 className="animate-spin h-6 w-6" /> : "САБТ КАРДАН"}
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="security" className="p-10 space-y-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ИВАЗИ РАМЗ</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рамзи кӯҳна</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
+                        <Input type={showPass ? "text" : "password"} value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="pl-12 h-14 rounded-2xl bg-muted/20 border-muted font-bold" placeholder="******" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рамзи нав</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
+                        <Input type={showPass ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pl-12 h-14 rounded-2xl bg-muted/20 border-muted font-bold" placeholder="******" />
+                        <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-4 text-muted-foreground">
+                          {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <Button onClick={handleChangePassword} disabled={isSaving} className="w-full bg-secondary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl mt-4">
+                      {isSaving ? <Loader2 className="animate-spin h-6 w-6" /> : "НАВСОЗИИ РАМЗ"}
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
         </div>
@@ -221,7 +279,7 @@ export default function Profile() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6 pt-4 px-8">
-                <button onClick={handleWalletClick} className="w-full block p-6 bg-secondary text-white rounded-[2rem] shadow-xl hover:scale-[1.02] transition-all text-left">
+                <button onClick={() => toast({ title: "Ҳамён", description: "Ин бахш дар оянда фаъол мешавад" })} className="w-full block p-6 bg-secondary text-white rounded-[2rem] shadow-xl hover:scale-[1.02] transition-all text-left">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Тавозуни Ҳамён</span>
                     <Wallet className="h-5 w-5 opacity-60" />
