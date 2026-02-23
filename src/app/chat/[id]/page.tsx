@@ -77,7 +77,7 @@ export default function ChatPage() {
   }, [db, chatId]);
   const { data: messages = [] } = useCollection<Message>(messagesQuery as any);
 
-  // Маркази асосии нест кардани огоҳиномаҳо
+  // Reset notifications on load and on new messages
   useEffect(() => {
     if (!chatId || !user || !db) return;
     
@@ -87,7 +87,7 @@ export default function ChatPage() {
       [`unreadCount.${user.uid}`]: 0
     }).catch(() => {});
 
-    // Маркировка кардани паёмҳо ҳамчун "хондашуда"
+    // Mark messages as read
     if (messages.length > 0) {
       messages.forEach(msg => {
         if (msg.senderId !== user.uid && !msg.isRead) {
