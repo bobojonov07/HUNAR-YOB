@@ -125,7 +125,7 @@ export default function Home() {
               Платформаи рақами яки устоҳо дар Тоҷикистон
             </Badge>
             <h1 className="text-6xl md:text-9xl font-headline font-black mb-10 leading-[0.95] tracking-tighter drop-shadow-sm uppercase">
-              KORYOB 2 <span className="text-primary">TJ.</span> <br />
+              KORYOB @ <br />
               <span className="italic opacity-90">МАҲОРАТРО ЁБ.</span>
             </h1>
             
@@ -284,7 +284,7 @@ export default function Home() {
       <footer className="bg-white pt-32 pb-20 border-t">
         <div className="container mx-auto px-4">
           <div className="pt-12 border-t text-[10px] text-muted-foreground font-black tracking-[0.6em] uppercase text-center opacity-50">
-            &copy; 2026 KORYOB 2 TJ. ТАҲИЯ ШУДААСТ ТАВАССУТИ TAJ.WEB
+            &copy; 2026 KORYOB @. ТАҲИЯ ШУДААСТ ТАВАССУТИ TAJ.WEB
           </div>
         </div>
       </footer>

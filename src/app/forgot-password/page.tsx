@@ -102,7 +102,7 @@ export default function ForgotPassword() {
               </Link>
             </Button>
             <p className="text-[10px] text-center text-muted-foreground font-black uppercase tracking-[0.5em] pt-4">
-              &copy; 2026 KORYOB 2 TJ. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
+              &copy; 2026 KORYOB @. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
             </p>
           </CardFooter>
         </Card>

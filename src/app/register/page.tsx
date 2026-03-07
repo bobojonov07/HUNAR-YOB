@@ -153,7 +153,7 @@ export default function Register() {
 
               <div className="space-y-2">
                 <Label className="font-black text-xs uppercase tracking-widest opacity-60">Ному насаби пурра</Label>
-                <Input className="h-14 rounded-2xl bg-muted/20 border-muted font-bold" placeholder="Ному насаби худро ворид кунед" value={name} onChange={(e) => setName(e.target.value)} />
+                <input className="flex h-14 w-full rounded-2xl border border-muted bg-muted/20 px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm font-bold" placeholder="Ному насаби худро ворид кунед" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,7 +224,7 @@ export default function Register() {
                 Аллакай акаунт доред? <Link href="/login" className="text-primary font-black hover:underline not-italic">Ворид шавед</Link>
               </p>
               <p className="text-[10px] text-center text-muted-foreground mt-10 font-black uppercase tracking-[0.4em]">
-                &copy; 2026 KORYOB 2 TJ. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
+                &copy; 2026 KORYOB @. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
               </p>
             </CardFooter>
           </form>

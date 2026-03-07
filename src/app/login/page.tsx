@@ -151,7 +151,7 @@ export default function Login() {
               Ҳанӯз сабти ном нашудаед? <Link href="/register" className="text-primary font-black hover:underline">Сабти ном</Link>
             </p>
             <p className="text-[9px] text-center text-muted-foreground font-black uppercase tracking-[0.2em]">
-              &copy; 2026 KORYOB 2 TJ. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
+              &copy; 2026 KORYOB @. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
             </p>
           </CardFooter>
         </Card>
