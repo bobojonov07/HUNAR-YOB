@@ -95,7 +95,6 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* Version info at the absolute bottom */}
               <div className="mt-auto p-8 border-t bg-muted/5">
                 {user && (
                   <button onClick={handleLogout} className="w-full flex items-center gap-4 p-4 mb-4 rounded-2xl hover:bg-red-50 transition-all group text-red-500">
@@ -112,7 +111,7 @@ export function Navbar() {
           </Sheet>
           
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-black font-headline tracking-tighter text-secondary uppercase">Koryob 2 TJ</span>
+            <span className="text-2xl font-black font-headline tracking-tighter text-secondary uppercase">KORYOB 2 TJ</span>
           </Link>
         </div>
 

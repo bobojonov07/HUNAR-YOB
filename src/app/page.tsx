@@ -170,7 +170,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* REKLAMA KORYOB 2 TJ */}
+      {/* РЕКЛАМА KORYOB TJ */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <Link href="https://koryob.ru" target="_blank" className="block group">
@@ -180,7 +180,7 @@ export default function Home() {
                   <BriefcaseBusiness className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">KORYOB 2 TJ</h2>
+                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">KORYOB TJ</h2>
                   <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълон ба KORYOB TJ гузаред</p>
                 </div>
               </div>
