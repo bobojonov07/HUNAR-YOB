@@ -23,9 +23,9 @@ export default function AboutPage() {
           <div className="mx-auto h-24 w-24 bg-primary/10 rounded-[2.5rem] flex items-center justify-center shadow-inner">
             <Hammer className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="text-6xl md:text-8xl font-headline font-black text-secondary tracking-tighter leading-none uppercase">KORYOB @</h1>
+          <h1 className="text-6xl md:text-8xl font-headline font-black text-secondary tracking-tighter leading-none uppercase">KORYOB 2</h1>
           <p className="text-xl md:text-2xl text-muted-foreground font-medium max-w-2xl mx-auto leading-relaxed">
-            Аввалин ва бузургтарин платформаи рақами яки Тоҷикистон "KORYOB @" барои пайдо кардани устоҳои моҳир ва пешниҳоди хидматҳои ҳунармандӣ.
+            Аввалин ва бузургтарин платформаи рақами яки Тоҷикистон "KORYOB 2" барои пайдо кардани устоҳои моҳир ва пешниҳоди хидматҳои ҳунармандӣ.
           </p>
         </section>
 
@@ -36,7 +36,7 @@ export default function AboutPage() {
             <h2 className="text-3xl font-black text-secondary uppercase tracking-tighter">ШАРТҲОИ ИСТИФОДА</h2>
           </div>
           <div className="space-y-4 text-muted-foreground font-medium leading-relaxed">
-            <p>1. <b>Умумият:</b> Платформаи "KORYOB @" танҳо барои шахсони аз 16-сола боло пешбинӣ шудааст.</p>
+            <p>1. <b>Умумият:</b> Платформаи "KORYOB 2" танҳо барои шахсони аз 16-сола боло пешбинӣ шудааст.</p>
             <p>2. <b>Масъулият:</b> Мо сифати кори устоҳоро назорат мекунем, аммо шартномаи ниҳоӣ байни мизоҷ ва усто баста мешавад.</p>
             <p>3. <b>Амният:</b> Истифодаи "Шартномаи Амниятӣ" барои ҳифзи маблағҳои шумо тавсия дода мешавад.</p>
             <p>4. <b>Манъкунӣ:</b> Интишори маълумоти бардурӯғ, ҳақорат ва кӯшиши фиреб боиси баста шудани (block) акаунт мегардад.</p>
@@ -62,7 +62,7 @@ export default function AboutPage() {
           <div className="relative z-10 space-y-8">
             <h2 className="text-4xl md:text-5xl font-headline font-black tracking-tighter uppercase">ҲАДАФИ МО</h2>
             <p className="text-lg md:text-xl opacity-80 leading-relaxed font-medium">
-              Мақсади асосии лоиҳаи "KORYOB @" — дастгирии ҳунармандони ватанӣ ва осон кардани ҳаёти мардуми Тоҷикистон мебошад. Мо боварӣ дорем, ки ҳар як маҳорат арзиш дорад ва ҳар як мушкилӣ бояд устои худро ёбад.
+              Мақсади асосии лоиҳаи "KORYOB 2" — дастгирии ҳунармандони ватанӣ ва осон кардани ҳаёти мардуми Тоҷикистон мебошад. Мо боварӣ дорем, ки ҳар як маҳорат арзиш дорад ва ҳар як мушкилӣ бояд устои худро ёбад.
             </p>
             <div className="flex flex-wrap gap-8 pt-6">
               <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export default function AboutPage() {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.5em] pt-10">
-            &copy; 2026 KORYOB @. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
+            &copy; 2026 KORYOB 2. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
           </p>
         </section>
       </main>
