@@ -170,7 +170,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* REKLAMA KORYOB.RU */}
+      {/* REKLAMA KORYOB 2 TJ */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <Link href="https://koryob.ru" target="_blank" className="block group">
@@ -180,8 +180,8 @@ export default function Home() {
                   <BriefcaseBusiness className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">КОРГАР ДАРКОР?</h2>
-                  <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълонҳои корӣ ба KORYOB.RU гузаред</p>
+                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">KORYOB 2 TJ</h2>
+                  <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълон ба KORYOB TJ гузаред</p>
                 </div>
               </div>
               <Button className="bg-white text-blue-700 hover:bg-white/90 h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl shrink-0 transition-transform group-hover:translate-x-2">
