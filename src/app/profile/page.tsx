@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
-import { UserProfile, ALL_REGIONS, Listing, KYC_PRICE } from "@/lib/storage";
+import { UserProfile, ALL_REGIONS, Listing } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { doc, collection, query, orderBy, setDoc, serverTimestamp, getDoc, updateDoc, increment } from "firebase/firestore";
-import { Listing, Message, Deal, calculateFee, UserProfile } from "@/lib/storage";
+import { Listing, Message, UserProfile } from "@/lib/storage";
 
 function formatDistanceToNowTajik(date: Date) {
   const now = new Date();
@@ -40,7 +40,6 @@ export default function ChatPage() {
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // clientId ҳатман лозим аст барои муайян кардани chatId
   const targetClientId = searchParams.get("client");
   
   const [newMessage, setNewMessage] = useState("");
@@ -55,14 +54,8 @@ export default function ChatPage() {
   const userProfileRef = useMemo(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef as any);
 
-  // Муайян кардани chatId: Ҳамеша "listingId_clientId"
   const chatId = useMemo(() => {
     if (!listingId || !user) return null;
-    
-    // Агар мо усто бошем, clientId аз URL гирифта мешавад. Агар мо мизоҷ бошем, UID-и мо clientId аст.
-    // Мо бояд аввал фаҳмем, ки оё мо соҳиби эълон ҳастем.
-    // Агар эълон нест бошад, мо танҳо ба targetClientId такя мекунем.
-    
     const clientId = targetClientId || user.uid;
     return `${listingId}_${clientId}`;
   }, [listingId, user, targetClientId]);
@@ -72,7 +65,6 @@ export default function ChatPage() {
   useEffect(() => {
     if (!chatId || !user || !db) return;
     
-    // Барои ёфтани шахси дигар, мо бояд аввал ҳуҷҷати чатро бинем
     getDoc(doc(db, "chats", chatId)).then(snap => {
       if (snap.exists()) {
         const chatData = snap.data();
@@ -83,7 +75,6 @@ export default function ChatPage() {
           });
         }
       } else if (listing) {
-        // Агар чат ҳанӯз набошад, маълумотро аз эълон мегирем
         const otherId = user.uid === listing.userId ? targetClientId : listing.userId;
         if (otherId) {
           getDoc(doc(db, "users", otherId)).then(uSnap => {
@@ -119,6 +110,15 @@ export default function ChatPage() {
     if (type === 'text' && !newMessage.trim()) return;
     if (!user || !listingId || !profile || !chatId) return;
 
+    if (type === 'deal' && profile.identificationStatus !== 'Verified') {
+      toast({ 
+        title: "Верификатсия лозим аст", 
+        description: "Танҳо корбарони тасдиқшуда метавонанд шартнома банданд.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     if (totalChars + (type === 'text' ? newMessage.length : 0) > CHAR_LIMIT) {
       toast({ title: "Лимит", description: "Лимити аломатҳо гузашт", variant: "destructive" });
       return;
@@ -126,9 +126,6 @@ export default function ChatPage() {
 
     const chatRef = doc(db, "chats", chatId);
     const msgRef = doc(collection(db, "chats", chatId, "messages"));
-    
-    // Барои сохтани чат, агар бори аввал бошад, мо ба маълумоти дигар ниёз дорем
-    // Агар эълон набошад, мо ҳадди ақал targetClientId дорем
     const clientId = targetClientId || user.uid;
     const artisanId = listing?.userId || (chatId.split('_')[0] === listingId ? (otherParty?.id || "") : "");
 
@@ -165,6 +162,18 @@ export default function ChatPage() {
     });
 
     if (type === 'text') setNewMessage("");
+  };
+
+  const handleOpenDealDialog = () => {
+    if (profile?.identificationStatus !== 'Verified') {
+      toast({ 
+        title: "Верификатсия лозим аст", 
+        description: "Барои бастани шартнома аввал шахсияти худро тасдиқ кунед.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    setIsDealDialogOpen(true);
   };
 
   const lastActiveText = useMemo(() => {
@@ -205,9 +214,7 @@ export default function ChatPage() {
           </div>
 
           <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-secondary text-white rounded-full font-black text-[10px]">ШАРТНОМА</Button>
-            </DialogTrigger>
+            <Button size="sm" onClick={handleOpenDealDialog} className="bg-secondary text-white rounded-full font-black text-[10px]">ШАРТНОМА</Button>
             <DialogContent className="rounded-3xl p-8 max-w-sm">
               <DialogHeader><DialogTitle className="font-black uppercase tracking-tighter">ДАРХОСТИ КОР</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-4">
