@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Send, ShieldCheck, CheckCircle2, MessageSquare, Loader2, Crown, Sparkles, Phone, PhoneOff, Mic, MicOff, AlertCircle, Flag } from "lucide-react";
+import { ChevronLeft, Send, ShieldCheck, CheckCircle2, MessageSquare, Loader2, Crown, Sparkles, AlertCircle, Flag } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,24 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { doc, collection, query, orderBy, setDoc, serverTimestamp, getDoc, updateDoc, increment, addDoc } from "firebase/firestore";
 import { Listing, Message, UserProfile, REGULAR_CHAR_LIMIT, PREMIUM_CHAR_LIMIT } from "@/lib/storage";
-import { cn } from "@/lib/utils";
+import { cn, hasProfanity } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { checkProfanity } from "@/ai/flows/check-profanity-flow";
 import { Textarea } from "@/components/ui/textarea";
-
-function formatDistanceToNowTajik(date: Date) {
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) return "Ҳозир";
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} дақиқа пеш`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} соат пеш`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 30) return `${diffInDays} рӯз пеш`;
-  return date.toLocaleDateString();
-}
 
 export default function ChatPage() {
   const { id: listingId } = useParams();
@@ -52,10 +37,6 @@ export default function ChatPage() {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isSendingReport, setIsSendingReport] = useState(false);
-  
-  const [isCalling, setIsCalling] = useState(false);
-  const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null);
-  const audioStreamRef = useRef<MediaStream | null>(null);
 
   const listingRef = useMemo(() => listingId ? doc(db, "listings", listingId as string) : null, [db, listingId]);
   const { data: listing, loading: listingLoading } = useDoc<Listing>(listingRef as any);
@@ -105,30 +86,6 @@ export default function ChatPage() {
   const isLimitReached = totalChars >= CHAR_LIMIT;
   const charProgress = Math.min((totalChars / CHAR_LIMIT) * 100, 100);
 
-  const handleStartCall = async () => {
-    if (!profile?.isPremium || !otherParty?.isPremium) {
-      toast({ title: "Маҳдудияти Premium", description: "Аудио-занг танҳо байни корбарони Premium имконпазир аст.", variant: "destructive" });
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioStreamRef.current = stream;
-      setHasMicPermission(true);
-      setIsCalling(true);
-    } catch (error) {
-      setHasMicPermission(false);
-      toast({ variant: 'destructive', title: 'Хатогии микрофон', description: 'Лутфан иҷозати микрофонро диҳед.' });
-    }
-  };
-
-  const handleEndCall = () => {
-    if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach(track => track.stop());
-      audioStreamRef.current = null;
-    }
-    setIsCalling(false);
-  };
-
   const handleSendReport = async () => {
     if (!user || !otherParty || reportReason.length < 50 || reportReason.length > 100) return;
     setIsSendingReport(true);
@@ -156,8 +113,8 @@ export default function ChatPage() {
     if (!user || !listingId || !profile || !chatId) return;
 
     if (type === 'text') {
-      const profanityCheck = await checkProfanity({ text: newMessage });
-      if (profanityCheck.isProfane) {
+      // Manual Profanity Check
+      if (hasProfanity(newMessage)) {
         const newWarningCount = (profile.warningCount || 0) + 1;
         await updateDoc(userProfileRef!, { 
           warningCount: increment(1),
@@ -286,12 +243,6 @@ export default function ChatPage() {
               </DialogContent>
             </Dialog>
 
-            {profile?.isPremium && otherParty?.isPremium && (
-              <Button onClick={handleStartCall} size="icon" className={cn("rounded-full h-10 w-10 shadow-xl", isPremiumTheme ? "bg-green-500" : "bg-secondary text-white")}>
-                <Phone className="h-5 w-5" />
-              </Button>
-            )}
-
             <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
               <Button disabled={profile?.identificationStatus !== 'Verified'} size="sm" onClick={() => setIsDealDialogOpen(true)} className={cn("rounded-full font-black text-[10px] px-6 h-10 shadow-xl", isPremiumTheme ? "bg-yellow-500 text-secondary" : "bg-secondary text-white")}>ШАРТНОМА</Button>
               <DialogContent className="rounded-3xl p-8 max-w-sm">
@@ -319,20 +270,6 @@ export default function ChatPage() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
-        {isCalling && (
-          <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-            <Avatar className="h-40 w-40 border-4 border-green-500 shadow-3xl mb-8">
-              <AvatarImage src={otherParty?.profileImage} className="object-cover" />
-              <AvatarFallback className="text-4xl bg-primary text-white font-black">{otherParty?.name?.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <h2 className="text-3xl font-black text-white uppercase mb-2">{otherParty?.name}</h2>
-            <p className="text-green-500 font-bold uppercase tracking-widest text-sm animate-pulse">Дар ҳоли занг задан...</p>
-            <Button onClick={handleEndCall} className="mt-20 h-20 w-20 rounded-full bg-red-500 hover:bg-red-600 shadow-2xl">
-              <PhoneOff className="h-8 w-8 text-white" />
-            </Button>
-          </div>
-        )}
-
         {messages.map((msg) => {
           const isMe = msg.senderId === user?.uid;
           return (

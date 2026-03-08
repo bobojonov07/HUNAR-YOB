@@ -16,9 +16,8 @@ import { Upload, ChevronLeft, Loader2, X, AlertTriangle, Crown } from "lucide-re
 import Image from "next/image";
 import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError, useCollection } from "@/firebase";
 import { doc, setDoc, serverTimestamp, collection, query, where, updateDoc, increment } from "firebase/firestore";
-import { compressImage, cn } from "@/lib/utils";
+import { compressImage, cn, hasProfanity } from "@/lib/utils";
 import Link from "next/link";
-import { checkProfanity } from "@/ai/flows/check-profanity-flow";
 
 export default function CreateListing() {
   const { user, loading: authLoading } = useUser();
@@ -90,9 +89,8 @@ export default function CreateListing() {
 
     setIsSubmitting(true);
     
-    // AI Profanity Check
-    const profanityCheck = await checkProfanity({ text: `${title} ${description}` });
-    if (profanityCheck.isProfane) {
+    // Manual Profanity Check
+    if (hasProfanity(`${title} ${description}`)) {
       const newWarningCount = (profile.warningCount || 0) + 1;
       await updateDoc(userProfileRef, { 
         warningCount: increment(1),

@@ -1,8 +1,18 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { FORBIDDEN_WORDS } from "./storage"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Филтри дастӣ барои санҷиши дашномҳо.
+ */
+export function hasProfanity(text: string): boolean {
+  if (!text) return false;
+  const lowerText = text.toLowerCase();
+  return FORBIDDEN_WORDS.some(word => lowerText.includes(word.toLowerCase()));
 }
 
 /**
@@ -17,7 +27,6 @@ export async function compressImage(base64Str: string, maxWidth = 1000, quality 
       let width = img.width;
       let height = img.height;
 
-      // Агар сурат аз андозаи ниҳоӣ калон бошад, онро хурд мекунем
       if (width > maxWidth) {
         height = (maxWidth / width) * height;
         width = maxWidth;
@@ -28,7 +37,6 @@ export async function compressImage(base64Str: string, maxWidth = 1000, quality 
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
       
-      // Ба формати JPEG ва бо сифати камтар табдил медиҳем
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
   });
