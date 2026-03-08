@@ -75,28 +75,29 @@ export default function VerifyPage() {
     if (!userProfileRef || !profile || !user) return;
     setIsLoading(true);
     
+    // Маълумоти сабук барои ҳуҷҷати корбар
     const userUpdateData = {
       identificationStatus: 'Pending',
-      kycPhotos: photos,
-      kycPaymentCheck: isRejected ? (profile?.kycPaymentCheck || "") : receipt,
       kycSubmittedAt: serverTimestamp(),
       errorReason: "" 
     };
 
+    // Маълумоти пурра бо суратҳо танҳо барои коллексияи дархостҳо
     const adminQueueData = {
       userId: user.uid,
       userName: profile.name,
       userPhone: profile.phone || "Номаълум",
       photos: photos,
-      receipt: isRejected ? (profile?.kycPaymentCheck || "") : receipt,
+      receipt: isRejected ? "Re-submitted without new payment" : receipt,
       submittedAt: serverTimestamp(),
       status: 'Pending'
     };
 
-    console.log("Фиристодани дархости верификатсия ба Консол...", adminQueueData);
-
     try {
+      // 1. Навсозии ҳолати корбар
       await updateDoc(userProfileRef, userUpdateData);
+      
+      // 2. Фиристодани суратҳо ба коллексияи алоҳида
       const requestRef = doc(db, "verification_requests", user.uid);
       await setDoc(requestRef, adminQueueData);
 
@@ -117,7 +118,6 @@ export default function VerifyPage() {
   const nextStep = () => {
     if (step === 1 && photos.length >= 3) {
       if (isRejected) {
-        // Skip payment step if rejected before
         setStep(3); 
       } else {
         setStep(2);
@@ -187,7 +187,7 @@ export default function VerifyPage() {
                   className={cn(
                     "h-2 w-12 rounded-full transition-all duration-500",
                     step >= s ? "bg-primary" : "bg-muted",
-                    isRejected && s === 2 && "hidden" // Hide payment step for rejected
+                    isRejected && s === 2 && "hidden"
                   )} 
                 />
               ))}
