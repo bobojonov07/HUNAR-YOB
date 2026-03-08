@@ -121,7 +121,10 @@ export default function Login() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="font-black text-xs uppercase tracking-widest opacity-60">Рамзи махфӣ</Label>
+                <div className="flex justify-between items-center">
+                  <Label className="font-black text-xs uppercase tracking-widest opacity-60">Рамзи махфӣ</Label>
+                  <Link href="/forgot-password" size="sm" className="text-[10px] font-black text-primary uppercase hover:underline">Фаромӯшии рамз?</Link>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
                   <Input type={showPassword ? "text" : "password"} placeholder="******" className="pl-12 pr-12 h-14 rounded-2xl bg-muted/20 border-muted font-bold" value={password} onChange={(e) => setPassword(e.target.value)} />

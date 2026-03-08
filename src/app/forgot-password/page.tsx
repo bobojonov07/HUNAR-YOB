@@ -35,7 +35,7 @@ export default function ForgotPassword() {
       setSent(true);
       toast({
         title: "Паём фиристода шуд",
-        description: "Дастурамал барои барқарории рамз ба почтаи шумо рафт.",
+        description: "Дастурамал ба почтаи шумо рафт. Лутфан бахши Spam-ро низ тафтиш кунед.",
       });
     } catch (error: any) {
       toast({
@@ -88,9 +88,16 @@ export default function ForgotPassword() {
                 <div className="mx-auto h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="h-12 w-12 text-green-600" />
                 </div>
-                <p className="text-sm font-medium leading-relaxed text-muted-foreground italic">
-                  Мо ба почтаи <b>{email}</b> пайванд барои ивази рамзро фиристодем. Лутфан паёмҳои худро (аз ҷумла бахши Spam)-ро санҷед.
-                </p>
+                <div className="space-y-4">
+                  <p className="text-sm font-medium leading-relaxed text-muted-foreground italic">
+                    Мо ба почтаи <b>{email}</b> пайванд барои ивази рамзро фиристодем. 
+                  </p>
+                  <div className="p-4 bg-yellow-50 rounded-2xl border-2 border-dashed border-yellow-200">
+                    <p className="text-[11px] font-black text-yellow-700 uppercase tracking-tight">
+                      ДИҚҚАТ: Лутфан бахши <span className="underline">SPAM</span>-ро ҳатман тафтиш кунед!
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
