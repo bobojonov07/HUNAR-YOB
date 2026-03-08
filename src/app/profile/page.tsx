@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
-import { UserProfile, ALL_REGIONS, Listing } from "@/lib/storage";
+import { UserProfile, ALL_REGIONS, Listing, KYC_PRICE } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, LogOut, Plus, MapPin, Camera, ShieldAlert, ShieldCheck, Clock, Crown, Zap, ChevronLeft, Wallet, FileCheck, Loader2, Heart, CheckCircle2, Trash2, Calendar, AlertCircle, Edit3, Lock, Eye, EyeOff } from "lucide-react";
+import { Settings, LogOut, Plus, MapPin, Camera, ShieldAlert, ShieldCheck, Clock, Crown, Zap, ChevronLeft, Wallet, FileCheck, Loader2, Heart, CheckCircle2, Trash2, Calendar, AlertCircle, Edit3, Lock, Eye, EyeOff, Upload, ArrowRight, Ban } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useCollection, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, updateDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, getDocs, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { useAuth } from "@/firebase";
 import { compressImage } from "@/lib/utils";
@@ -49,15 +49,17 @@ export default function Profile() {
   const { data: displayListings = [], loading: dataLoading } = useCollection<Listing>(dataQuery as any);
 
   const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
+  const [kycStep, setKycStep] = useState(1);
+  const [kycPhotos, setKycPhotos] = useState<string[]>([]);
+  const [kycCheck, setKycCheck] = useState("");
+  const [isKycLoading, setIsKycLoading] = useState(false);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Форма таҳрир
   const [editName, setEditName] = useState("");
   const [editRegion, setEditRegion] = useState("");
-  
-  // Ивази рамз
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -70,6 +72,7 @@ export default function Profile() {
   }, [profile]);
 
   const profileFileInputRef = useRef<HTMLInputElement>(null);
+  const kycInputRef = useRef<HTMLInputElement>(null);
 
   const completion = useMemo(() => {
     if (!profile) return 0;
@@ -81,6 +84,44 @@ export default function Profile() {
     if (profile.profileImage) points += 20;
     return points;
   }, [profile]);
+
+  const handleKycPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsKycLoading(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const compressed = await compressImage(reader.result as string, 800, 0.7);
+      if (kycStep === 1) {
+        setKycPhotos(prev => [...prev, compressed]);
+      } else if (kycStep === 3) {
+        setKycCheck(compressed);
+      }
+      setIsKycLoading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const submitKyc = async () => {
+    if (!userProfileRef) return;
+    setIsKycLoading(true);
+    const updateData = {
+      identificationStatus: 'Pending',
+      kycPhotos: kycPhotos,
+      kycPaymentCheck: kycCheck,
+      kycSubmittedAt: serverTimestamp()
+    };
+    updateDoc(userProfileRef, updateData)
+      .then(() => {
+        toast({ title: "Дархост фиристода шуд", description: "Мо дар муддати 24 соат тафтиш мекунем ва фаъол месозем." });
+        setIsKycDialogOpen(false);
+        setKycStep(1);
+        setKycPhotos([]);
+        setKycCheck("");
+      })
+      .catch(() => toast({ title: "Хатогӣ", variant: "destructive" }))
+      .finally(() => setIsKycLoading(false));
+  };
 
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,61 +141,31 @@ export default function Profile() {
   const handleUpdateProfile = async () => {
     if (!userProfileRef) return;
     setIsSaving(true);
-    updateDoc(userProfileRef, {
-      name: editName,
-      region: editRegion
-    })
+    updateDoc(userProfileRef, { name: editName, region: editRegion })
     .then(() => {
       toast({ title: "Профил навсозӣ шуд" });
       setIsSettingsOpen(false);
-    })
-    .catch((err) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userProfileRef.path,
-        operation: 'update',
-        requestResourceData: { name: editName, region: editRegion }
-      }));
     })
     .finally(() => setIsSaving(false));
   };
 
   const handleChangePassword = async () => {
-    if (!auth.currentUser || !oldPassword || !newPassword) {
-      toast({ title: "Хатогӣ", description: "Майдонҳоро пур кунед", variant: "destructive" });
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast({ title: "Хатогӣ", description: "Рамзи нав бояд камаш 6 аломат бошад", variant: "destructive" });
-      return;
-    }
-
+    if (!auth.currentUser || !oldPassword || !newPassword) return;
     setIsSaving(true);
     try {
       const credential = EmailAuthProvider.credential(auth.currentUser.email!, oldPassword);
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updatePassword(auth.currentUser, newPassword);
-      toast({ title: "Муваффақият", description: "Рамзи шумо навсозӣ шуд" });
-      setOldPassword("");
-      setNewPassword("");
+      toast({ title: "Муваффақият" });
       setIsSettingsOpen(false);
-    } catch (error: any) {
-      toast({ title: "Хатогӣ", description: "Рамзи кӯҳна нодуруст аст", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (e) {
+      toast({ title: "Хатогӣ", variant: "destructive" });
+    } finally { setIsSaving(false); }
   };
 
   const handleDeleteListing = async (listingId: string) => {
-    if (!confirm("Оё шумо мутмаин ҳастед, ки мехоҳед ин эълонро нест кунед?")) return;
-    
-    deleteDoc(doc(db, "listings", listingId))
-      .then(() => toast({ title: "Эълон нест карда шуд" }))
-      .catch((err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `listings/${listingId}`,
-          operation: 'delete'
-        }));
-      });
+    if (!confirm("Оё шумо мутмаин ҳастед?")) return;
+    deleteDoc(doc(db, "listings", listingId)).then(() => toast({ title: "Нест карда шуд" }));
   };
 
   const handleLogout = async () => {
@@ -170,8 +181,7 @@ export default function Profile() {
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="flex justify-between items-center mb-8">
           <Button variant="ghost" onClick={() => router.back()} className="hover:text-primary p-0 font-black">
-            <ChevronLeft className="mr-2 h-5 w-5" />
-            БОЗГАШТ
+            <ChevronLeft className="mr-2 h-5 w-5" /> БОЗГАШТ
           </Button>
           
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -188,60 +198,37 @@ export default function Profile() {
                 </TabsList>
                 
                 <TabsContent value="profile" className="p-10 space-y-6">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ТАҲРИРИ ПРОФИЛ</DialogTitle>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ТАҲРИРИ ПРОФИЛ</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Ному насаб</Label>
                       <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-muted font-bold" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рақами телефон (таҳрир намешавад)</Label>
-                      <Input value={profile.phone} disabled className="h-14 rounded-2xl bg-muted/10 border-muted font-bold opacity-50 cursor-not-allowed" />
-                    </div>
-                    <div className="space-y-2">
                       <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Минтақа</Label>
                       <Select value={editRegion} onValueChange={setEditRegion}>
-                        <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-muted font-bold">
-                          <SelectValue placeholder="Интихоби минтақа" />
-                        </SelectTrigger>
+                        <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-muted font-bold"><SelectValue placeholder="Минтақа" /></SelectTrigger>
                         <SelectContent className="rounded-2xl">
                           {ALL_REGIONS.map(r => <SelectItem key={r} value={r} className="font-bold">{r}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={handleUpdateProfile} disabled={isSaving} className="w-full bg-primary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl mt-4">
-                      {isSaving ? <Loader2 className="animate-spin h-6 w-6" /> : "САБТ КАРДАН"}
-                    </Button>
+                    <Button onClick={handleUpdateProfile} disabled={isSaving} className="w-full bg-primary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl">САБТ КАРДАН</Button>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="security" className="p-10 space-y-6">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ИВАЗИ РАМЗ</DialogTitle>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle className="text-2xl font-black text-secondary tracking-tighter">ИВАЗИ РАМЗ</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рамзи кӯҳна</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
-                        <Input type={showPass ? "text" : "password"} value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="pl-12 h-14 rounded-2xl bg-muted/20 border-muted font-bold" placeholder="******" />
-                      </div>
+                      <Input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-muted" />
                     </div>
                     <div className="space-y-2">
                       <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рамзи нав</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
-                        <Input type={showPass ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pl-12 h-14 rounded-2xl bg-muted/20 border-muted font-bold" placeholder="******" />
-                        <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-4 text-muted-foreground">
-                          {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
+                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-14 rounded-2xl bg-muted/20 border-muted" />
                     </div>
-                    <Button onClick={handleChangePassword} disabled={isSaving} className="w-full bg-secondary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl mt-4">
-                      {isSaving ? <Loader2 className="animate-spin h-6 w-6" /> : "НАВСОЗИИ РАМЗ"}
-                    </Button>
+                    <Button onClick={handleChangePassword} disabled={isSaving} className="w-full bg-secondary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl">НАВСОЗӢ</Button>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -253,33 +240,26 @@ export default function Profile() {
           <div className="lg:col-span-1 space-y-6">
             <Card className="border-border shadow-sm rounded-[2.5rem] overflow-hidden bg-white">
               <CardHeader className="text-center pb-2 pt-10">
-                <div className="flex justify-center mb-4 relative group">
+                <div className="flex justify-center mb-4 relative">
                   <Avatar className="h-32 w-32 ring-8 ring-primary/5 shadow-2xl">
                     <AvatarImage src={profile.profileImage} className="object-cover" />
                     <AvatarFallback className="text-4xl bg-primary text-white font-black">{profile.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <button 
-                    onClick={() => profileFileInputRef.current?.click()} 
-                    disabled={isUploadingPhoto}
-                    className="absolute bottom-0 right-1/2 translate-x-12 bg-secondary text-white p-3 rounded-2xl shadow-xl hover:scale-110 transition-transform active:scale-95 disabled:opacity-50"
-                  >
-                    {isUploadingPhoto ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                  <button onClick={() => profileFileInputRef.current?.click()} className="absolute bottom-0 right-1/2 translate-x-12 bg-secondary text-white p-3 rounded-2xl shadow-xl">
+                    <Camera className="h-5 w-5" />
                   </button>
                   <input type="file" className="hidden" ref={profileFileInputRef} onChange={handleProfileImageChange} accept="image/*" />
                 </div>
-                <div className="flex flex-col items-center">
-                  <CardTitle className="text-2xl font-black flex items-center gap-2 tracking-tighter text-secondary">
-                    {profile.name}
-                    {profile.identificationStatus === 'Verified' && <CheckCircle2 className="h-6 w-6 text-green-500" />}
-                  </CardTitle>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="outline" className="border-primary text-primary px-4 py-1 font-black rounded-xl uppercase tracking-widest text-[10px]">{profile.role === 'Usto' ? 'УСТО' : 'МИЗОҶ'}</Badge>
-                    {profile.isPremium && <Badge className="bg-yellow-500 text-white px-4 py-1 font-black rounded-xl text-[10px]"><Crown className="h-3 w-3 mr-1" /> PREMIUM</Badge>}
-                  </div>
+                <CardTitle className="text-2xl font-black flex items-center justify-center gap-2 tracking-tighter text-secondary">
+                  {profile.name}
+                  {profile.identificationStatus === 'Verified' && <CheckCircle2 className="h-6 w-6 text-green-500" />}
+                </CardTitle>
+                <div className="flex justify-center gap-2 mt-2">
+                  <Badge variant="outline" className="border-primary text-primary px-4 py-1 font-black rounded-xl uppercase tracking-widest text-[10px]">{profile.role === 'Usto' ? 'УСТО' : 'МИЗОҶ'}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6 pt-4 px-8">
-                <button onClick={() => toast({ title: "Ҳамён", description: "Ин бахш дар оянда фаъол мешавад" })} className="w-full block p-6 bg-secondary text-white rounded-[2rem] shadow-xl hover:scale-[1.02] transition-all text-left">
+                <button onClick={() => router.push("/wallet")} className="w-full block p-6 bg-secondary text-white rounded-[2rem] shadow-xl hover:scale-[1.02] transition-all">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Тавозуни Ҳамён</span>
                     <Wallet className="h-5 w-5 opacity-60" />
@@ -292,42 +272,97 @@ export default function Profile() {
 
                 <Dialog open={isKycDialogOpen} onOpenChange={setIsKycDialogOpen}>
                   <DialogTrigger asChild>
-                    <button disabled={profile.identificationStatus === 'Verified'} className={`w-full p-6 rounded-[2rem] border-2 border-dashed flex items-center gap-4 text-left transition-all hover:scale-[1.01] ${
+                    <button className={`w-full p-6 rounded-[2rem] border-2 border-dashed flex items-center gap-4 text-left transition-all ${
                       profile.identificationStatus === 'Verified' ? 'bg-green-50 border-green-200 text-green-700' :
                       profile.identificationStatus === 'Pending' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                      profile.identificationStatus === 'Rejected' ? 'bg-orange-50 border-orange-200 text-orange-700 animate-pulse' :
+                      profile.identificationStatus === 'Blocked' ? 'bg-red-50 border-red-200 text-red-700' :
                       'bg-red-50 border-red-200 text-red-700'
                     }`}>
                       <div className="h-10 w-10 rounded-2xl bg-white/50 flex items-center justify-center shrink-0">
                         {profile.identificationStatus === 'Verified' ? <ShieldCheck className="h-6 w-6" /> : 
-                         profile.identificationStatus === 'Pending' ? <Clock className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
+                         profile.identificationStatus === 'Pending' ? <Clock className="h-6 w-6" /> : 
+                         profile.identificationStatus === 'Blocked' ? <Ban className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">{profile.identificationStatus === 'Verified' ? 'Тасдиқшуда' : profile.identificationStatus === 'Pending' ? 'Дар баррасӣ' : 'Тасдиқи шахсият'}</p>
-                        <p className="text-[9px] font-medium opacity-60">{profile.identificationStatus === 'Verified' ? 'Шумо тасдиқ шудаед' : 'Барои гирифтани нишони касбӣ пахш кунед'}</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">
+                          {profile.identificationStatus === 'Verified' ? 'Тасдиқшуда' : 
+                           profile.identificationStatus === 'Pending' ? 'Дар баррасӣ' : 
+                           profile.identificationStatus === 'Rejected' ? 'Рад шуд' : 
+                           profile.identificationStatus === 'Blocked' ? 'БЛОК ШУДААСТ' : 'Тасдиқи шахсият'}
+                        </p>
+                        <p className="text-[9px] font-medium opacity-60">
+                          {profile.identificationStatus === 'Rejected' ? 'Маълумотро дубора фиристед' : 'Барои гирифтани нишони касбӣ пахш кунед'}
+                        </p>
                       </div>
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="rounded-[2.5rem] p-12 border-none shadow-3xl max-w-sm text-center">
+                  <DialogContent className="rounded-[2.5rem] p-10 border-none shadow-3xl max-w-md">
                     <DialogHeader>
-                      <DialogTitle className="text-2xl font-black text-secondary tracking-tighter uppercase mb-4">ТАДБИҚИ ШАХСИЯТ</DialogTitle>
+                      <DialogTitle className="text-2xl font-black text-secondary tracking-tighter uppercase">ВЕРИФИКАТСИЯ (KYC)</DialogTitle>
+                      <DialogDescription className="font-bold text-[10px] text-primary uppercase">МАБЛАҒИ ВЕРИФИКАТСИЯ: {KYC_PRICE} СОМОНӢ</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-8 py-4">
-                      <div className="mx-auto h-24 w-24 bg-primary/10 rounded-[2rem] flex items-center justify-center animate-pulse">
-                        <AlertCircle className="h-12 w-12 text-primary" />
+
+                    {kycStep === 1 && (
+                      <div className="space-y-6 pt-4">
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-60">Қадами 1: Бор кардани суратҳои шиноснома (3 дона)</p>
+                        <div className="grid grid-cols-1 gap-3">
+                          <div className="text-[10px] font-bold text-muted-foreground flex flex-col gap-1">
+                            <span>1. Пеши шиноснома</span>
+                            <span>2. Пушти шиноснома</span>
+                            <span>3. Шумо бо шиноснома дар даст (Selfie)</span>
+                          </div>
+                          <input type="file" className="hidden" ref={kycInputRef} onChange={handleKycPhotoUpload} accept="image/*" />
+                          <Button onClick={() => kycInputRef.current?.click()} variant="outline" className="h-24 border-dashed rounded-2xl" disabled={kycPhotos.length >= 3 || isKycLoading}>
+                            {isKycLoading ? <Loader2 className="animate-spin" /> : <Camera className="mr-2" />} {kycPhotos.length}/3 Сурат
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          {kycPhotos.map((p, i) => <div key={i} className="h-12 w-12 rounded-lg bg-muted relative overflow-hidden"><Image src={p} fill alt="kyc" className="object-cover" /></div>)}
+                        </div>
+                        <Button disabled={kycPhotos.length < 3} onClick={() => setKycStep(2)} className="w-full bg-primary h-14 rounded-2xl font-black uppercase">ҚАДАМИ НАВБАТӢ</Button>
                       </div>
-                      <div className="space-y-4">
-                        <h4 className="text-xl font-black text-secondary leading-tight">Ин дар рӯзҳои наздик мешавад</h4>
-                        <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                          Системаи верификатсияи AI ҳоло дар ҳоли такмилдиҳӣ мебошад. Лутфан сабр кунед, ба наздикӣ фаъол мешавад.
-                        </p>
+                    )}
+
+                    {kycStep === 2 && (
+                      <div className="space-y-6 pt-4">
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-60">Қадами 2: Пардохти маблағ</p>
+                        <div className="p-6 bg-secondary/5 rounded-3xl border-2 border-dashed border-secondary/20 space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Image src="https://picsum.photos/seed/dcity/100/100" width={40} height={40} alt="DC" className="rounded-xl" />
+                            <div className="text-xs font-black">ДУШАНБЕ СИТИ / СПИТАМЕН</div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-bold opacity-50 uppercase">Рақам барои интиқол:</div>
+                            <div className="text-xl font-black text-secondary">975638778</div>
+                            <div className="text-xs font-bold">Ном: А Б</div>
+                          </div>
+                        </div>
+                        <Button onClick={() => setKycStep(3)} className="w-full bg-primary h-14 rounded-2xl font-black uppercase">МАН ПАРДОХТ КАРДАМ</Button>
                       </div>
-                      <Button onClick={() => setIsKycDialogOpen(false)} className="w-full bg-secondary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl">ФАҲМО</Button>
-                    </div>
+                    )}
+
+                    {kycStep === 3 && (
+                      <div className="space-y-6 pt-4">
+                        <p className="text-xs font-bold uppercase tracking-widest opacity-60">Қадами 3: Бор кардани сурати чек</p>
+                        <Button onClick={() => kycInputRef.current?.click()} variant="outline" className="w-full h-32 border-dashed rounded-2xl" disabled={isKycLoading}>
+                          {isKycLoading ? <Loader2 className="animate-spin" /> : kycCheck ? "ЧЕК ИНТИХОБ ШУД" : "ИЛОВАИ СУРАТИ ЧЕК"}
+                        </Button>
+                        {kycCheck && <div className="h-20 w-20 rounded-xl bg-muted relative mx-auto overflow-hidden"><Image src={kycCheck} fill alt="check" className="object-cover" /></div>}
+                        
+                        <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex gap-3">
+                          <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+                          <p className="text-[9px] font-bold text-red-600 uppercase leading-relaxed">ДИҚҚАТ: Дар ҳолати чеки қалбакӣ мо акаунти шуморо пурра БЛОК мекунем.</p>
+                        </div>
+
+                        <Button disabled={!kycCheck || isKycLoading} onClick={submitKyc} className="w-full bg-secondary h-16 rounded-2xl font-black uppercase">ФИРИСТОДАН</Button>
+                      </div>
+                    )}
                   </DialogContent>
                 </Dialog>
 
                 <div className="space-y-3">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1 text-secondary opacity-60"><span>Пуррагии профил</span><span>{completion}%</span></div>
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-60"><span>Пуррагии профил</span><span>{completion}%</span></div>
                   <Progress value={completion} className="h-3" />
                 </div>
               </CardContent>
@@ -357,43 +392,29 @@ export default function Profile() {
             ) : displayListings.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {displayListings.map(listing => (
-                  <Card key={listing.id} className="overflow-hidden border-none shadow-xl rounded-[3rem] bg-white group hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all duration-700">
+                  <Card key={listing.id} className="overflow-hidden border-none shadow-xl rounded-[3rem] bg-white group">
                     <div className="relative h-64 w-full overflow-hidden">
                       <Image src={listing.images[0]} alt={listing.title} fill className="object-cover group-hover:scale-110 transition-transform duration-1000" />
                       <Badge className="absolute top-6 left-6 bg-primary/95 text-white border-none px-6 py-2.5 font-black rounded-2xl backdrop-blur-xl shadow-xl">{listing.category}</Badge>
-                      {listing.isVip && <Badge className="absolute top-6 right-6 bg-yellow-500 text-white border-none px-6 py-2.5 font-black rounded-2xl shadow-xl animate-pulse">VIP</Badge>}
                     </div>
                     <CardHeader className="p-10 pb-4">
-                      <CardTitle className="text-2xl font-black text-secondary line-clamp-1 tracking-tight group-hover:text-primary transition-colors">{listing.title}</CardTitle>
+                      <CardTitle className="text-2xl font-black text-secondary line-clamp-1 tracking-tight">{listing.title}</CardTitle>
                     </CardHeader>
                     <CardFooter className="p-10 pt-0 flex gap-2">
-                      <Button variant="outline" asChild className="flex-1 rounded-2xl border-muted text-secondary h-12 px-6 font-black uppercase tracking-widest text-[10px] transition-all hover:bg-secondary hover:text-white border-2">
+                      <Button variant="outline" asChild className="flex-1 rounded-2xl border-muted text-secondary h-12 px-6 font-black uppercase text-[10px]">
                         <Link href={`/listing/${listing.id}`}>БИНЕД</Link>
                       </Button>
                       {profile.role === 'Usto' && (
-                        <Button 
-                          onClick={() => handleDeleteListing(listing.id)}
-                          variant="ghost" 
-                          className="w-12 h-12 rounded-2xl text-red-500 hover:bg-red-50 hover:text-red-600 p-0"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </Button>
+                        <Button onClick={() => handleDeleteListing(listing.id)} variant="ghost" className="w-12 h-12 rounded-2xl text-red-500 hover:bg-red-50 p-0"><Trash2 className="h-5 w-5" /></Button>
                       )}
                     </CardFooter>
                   </Card>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-40 bg-white rounded-[3rem] border-4 border-dashed border-muted/50 shadow-inner group">
+              <div className="text-center py-40 bg-white rounded-[3rem] border-4 border-dashed border-muted/50 shadow-inner">
                 {profile.role === 'Usto' ? <Zap className="h-20 w-20 mx-auto text-muted mb-6 opacity-30" /> : <Heart className="h-20 w-20 mx-auto text-muted mb-6 opacity-30" />}
-                <p className="text-muted-foreground font-black text-xl uppercase tracking-[0.2em] opacity-40 text-center px-4">
-                  {profile.role === 'Usto' ? 'ЭЪЛОНҲО ЁФТ НАШУДАНД' : 'ҲАНӮЗ ЯГОН ПИСАНДИДА НАДОРЕД'}
-                </p>
-                {profile.role === 'Client' && (
-                  <Button asChild variant="link" className="mt-6 text-primary font-black uppercase tracking-widest text-xs">
-                    <Link href="/listings">ҶУСТУҶӮИ УСТОҲО</Link>
-                  </Button>
-                )}
+                <p className="text-muted-foreground font-black text-xl uppercase tracking-[0.2em] opacity-40 text-center">ЭЪЛОНҲО ЁФТ НАШУДАНД</p>
               </div>
             )}
           </div>

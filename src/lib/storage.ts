@@ -2,7 +2,7 @@
 'use client';
 
 export type UserRole = 'Usto' | 'Client';
-export type IdentificationStatus = 'None' | 'Pending' | 'Verified' | 'Rejected';
+export type IdentificationStatus = 'None' | 'Pending' | 'Verified' | 'Rejected' | 'Blocked';
 
 export interface UserProfile {
   id: string;
@@ -14,6 +14,9 @@ export interface UserProfile {
   profileImage?: string;
   balance: number;
   identificationStatus: IdentificationStatus;
+  kycPhotos?: string[]; // [front, back, selfie]
+  kycPaymentCheck?: string; // image of receipt
+  kycSubmittedAt?: any;
   passportNumber?: string;
   isPremium?: boolean;
   isArtisanFeePaid?: boolean;
@@ -29,7 +32,7 @@ export interface Transaction {
   id: string;
   userId: string;
   amount: number;
-  type: 'Deposit' | 'Withdrawal' | 'Payment' | 'Refund';
+  type: 'Deposit' | 'Withdrawal' | 'Payment' | 'Refund' | 'Verification';
   status: 'Pending' | 'Completed' | 'Failed';
   method: string;
   createdAt: any;
@@ -100,6 +103,7 @@ export interface Review {
 
 export const VIP_PRICE = 20;
 export const PREMIUM_PRICE = 100;
+export const KYC_PRICE = 10;
 
 export const ALL_REGIONS = [
   "Душанбе", "Бохтар", "Кӯлоб", "Хуҷанд", "Истаравшан", "Конибодом", "Панҷакент", 

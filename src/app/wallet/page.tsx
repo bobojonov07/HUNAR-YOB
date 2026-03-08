@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
 import { UserProfile } from "@/lib/storage";
 import { useRouter } from "next/navigation";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, CreditCard, History, Plus, ArrowLeft, ShieldCheck, Lock, ArrowDownRight, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { Wallet, CreditCard, Plus, ArrowLeft, ShieldCheck, Lock, ArrowDownRight, CheckCircle2, AlertCircle, Info, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +35,19 @@ export default function WalletPage() {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [mode, setMode] = useState<'deposit' | 'withdraw'>('deposit');
+
+  const isVerified = profile?.identificationStatus === 'Verified';
+
+  useEffect(() => {
+    if (profile && profile.identificationStatus !== 'Verified') {
+      toast({
+        title: "Верификатсия лозим аст",
+        description: "Аввал шахсияти худро тасдиқ кунед.",
+        variant: "destructive"
+      });
+      router.push("/profile");
+    }
+  }, [profile, router, toast]);
 
   const handleOpenSecure = (e: React.FormEvent, m: 'deposit' | 'withdraw') => {
     e.preventDefault();
@@ -64,209 +78,79 @@ export default function WalletPage() {
 
   const handleActionSecure = async () => {
     if (!userProfileRef || !profile || !user) return;
-    
-    if (!passwordConfirm) {
-      toast({ title: "Хатогии рамз", description: "Рамзро ворид кунед", variant: "destructive" });
-      return;
-    }
-
     setLoading(true);
     const numAmount = parseFloat(amount);
     
     try {
-      /**
-       * ДИҚҚАТ: БАРОИ ПАРДОХТИ ВОҚЕӢ (REAL PAYMENT)
-       * Дар инҷо бояд API-и бонк (масалан Stripe ё Alif Pay) даъват карда шавад.
-       * Мисол: await callPaymentGateway(cardNumber, numAmount);
-       * Ҳоло ин танҳо як симулятсия барои санҷиши намуди барнома аст.
-       */
-      
-      // Симулятсияи интизории ҷавоби бонк
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // 1. Навсозии тавозун дар Firestore
-      const updateData = {
-        balance: increment(mode === 'deposit' ? numAmount : -numAmount)
-      };
+      const updateData = { balance: increment(mode === 'deposit' ? numAmount : -numAmount) };
       await updateDoc(userProfileRef, updateData);
 
-      // 2. Сабти таърихи амалиёт
       await addDoc(collection(db, "transactions"), {
         userId: user.uid,
         amount: numAmount,
         type: mode === 'deposit' ? 'Deposit' : 'Withdrawal',
         status: 'Completed',
-        method: mode === 'deposit' ? `Card ending in ${cardNumber.slice(-4)}` : 'Bank Transfer',
         createdAt: serverTimestamp()
       });
 
       setIsSecureDialogOpen(false);
       setIsSuccessDialogOpen(true);
       setAmount("");
-      setCardNumber("");
-      setCardExpiry("");
-      setCardCVC("");
-      setPasswordConfirm("");
     } catch (err: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userProfileRef.path,
-        operation: 'update',
-        requestResourceData: { balance: amount },
-      }));
+      toast({ title: "Хатогӣ", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user || !profile) return <div className="min-h-screen flex items-center justify-center">Боргузорӣ...</div>;
+  if (!user || !profile || !isVerified) return <div className="min-h-screen flex items-center justify-center">Боргузорӣ...</div>;
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <Button variant="ghost" onClick={() => router.back()} className="mb-8 hover:text-primary p-0 font-black">
-          <ArrowLeft className="mr-2 h-6 w-6" /> 
-          БОЗГАШТ
+          <ArrowLeft className="mr-2 h-6 w-6" /> БОЗГАШТ
         </Button>
-
-        {/* Огоҳинома дар бораи ҳолати санҷишӣ */}
-        <Alert className="mb-10 bg-blue-50 border-blue-200 rounded-[2rem] p-6">
-          <Info className="h-6 w-6 text-blue-500" />
-          <AlertTitle className="font-black text-blue-700 uppercase tracking-tighter ml-2">ҲОЛАТИ САНҶИШӢ (DEMO MODE)</AlertTitle>
-          <AlertDescription className="text-blue-600 font-medium ml-2">
-            Ин бахш дар ҳоли ҳозир барои намоиши интерфейс сохта шудааст. Маблағ воқеан аз корт гирифта намешавад. Барои пардохти ҳақиқӣ бояд бо бонк шартнома баста ва API-ро пайваст кунед.
-          </AlertDescription>
-        </Alert>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-7 space-y-8">
             <Card className="border-none shadow-3xl bg-gradient-to-br from-secondary via-secondary to-primary/90 text-white overflow-hidden relative rounded-[3rem] p-10">
-              <div className="absolute -right-20 -bottom-20 opacity-10 rotate-12"><Wallet className="h-80 w-80" /></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-3 opacity-80 mb-6 bg-white/10 w-fit px-4 py-1.5 rounded-full backdrop-blur-md">
                   <ShieldCheck className="h-5 w-5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Ҳисоби ҳифзшуда</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Ҳисоби тасдиқшуда</span>
                 </div>
-                <h2 className="text-2xl font-black mb-2 opacity-70">Тавозуни ҷорӣ:</h2>
+                <h2 className="text-2xl font-black mb-2 opacity-70">Тавозун:</h2>
                 <div className="flex items-baseline gap-4">
                   <span className="text-8xl font-black tracking-tighter">{(profile.balance || 0).toLocaleString()}</span>
                   <span className="text-3xl font-bold opacity-60">TJS</span>
                 </div>
               </div>
             </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-8 bg-white rounded-[2.5rem] shadow-xl border border-muted/50 flex flex-col gap-4">
-                <div className="h-14 w-14 bg-green-500/10 rounded-2xl flex items-center justify-center">
-                  <Plus className="h-7 w-7 text-green-600" />
-                </div>
-                <div>
-                  <h4 className="font-black text-secondary text-sm uppercase tracking-widest mb-1">Пур кардан</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Пур кардани фаврӣ тавассути Корти Миллӣ, Alif, Humo ва Visa.</p>
-                </div>
-              </div>
-              <div className="p-8 bg-white rounded-[2.5rem] shadow-xl border border-muted/50 flex flex-col gap-4">
-                <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center">
-                  <ArrowDownRight className="h-7 w-7 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-black text-secondary text-sm uppercase tracking-widest mb-1">Бозхонд (Вывод)</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Гирифтани маблағ ба корти бонкӣ дар давоми 24 соат.</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-5">
-            <Card className="border-none shadow-3xl rounded-[3.5rem] overflow-hidden bg-white ring-1 ring-secondary/5 sticky top-24">
+            <Card className="border-none shadow-3xl rounded-[3.5rem] overflow-hidden bg-white">
               <Tabs defaultValue="deposit" className="w-full">
                 <TabsList className="w-full h-20 bg-muted/20 rounded-none p-2 gap-2">
-                  <TabsTrigger value="deposit" className="flex-1 h-full rounded-[2rem] font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-lg">
-                    ПУР КАРДАН
-                  </TabsTrigger>
-                  <TabsTrigger value="withdraw" className="flex-1 h-full rounded-[2rem] font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-lg">
-                    БОЗХОНД
-                  </TabsTrigger>
+                  <TabsTrigger value="deposit" className="flex-1 h-full rounded-[2rem] font-black text-xs uppercase">ПУР КАРДАН</TabsTrigger>
+                  <TabsTrigger value="withdraw" className="flex-1 h-full rounded-[2rem] font-black text-xs uppercase">БОЗХОНД</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="deposit" className="p-10 space-y-8">
                   <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Маблағи воридотӣ (TJS)</Label>
-                      <Input 
-                        type="number" 
-                        placeholder="0.00" 
-                        value={amount} 
-                        onChange={(e) => setAmount(e.target.value)} 
-                        className="h-20 font-black text-5xl rounded-3xl bg-muted/10 border-none px-6 focus:ring-primary" 
-                      />
-                    </div>
-
-                    <div className="p-8 bg-muted/10 rounded-[2.5rem] space-y-6 border border-muted-foreground/10">
-                      <div className="space-y-2">
-                        <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рақами корт</Label>
-                        <div className="relative">
-                          <CreditCard className="absolute left-4 top-4 h-6 w-6 text-muted-foreground" />
-                          <Input 
-                            placeholder="0000 0000 0000 0000" 
-                            maxLength={16}
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            className="h-14 pl-14 rounded-2xl bg-white border-none font-bold" 
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Муҳлат</Label>
-                          <Input 
-                            placeholder="MM/YY" 
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
-                            className="h-14 rounded-2xl bg-white border-none font-bold text-center" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">CVC</Label>
-                          <Input 
-                            type="password" 
-                            placeholder="***" 
-                            maxLength={3}
-                            value={cardCVC}
-                            onChange={(e) => setCardCVC(e.target.value)}
-                            className="h-14 rounded-2xl bg-white border-none font-bold text-center" 
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <Label className="font-black text-[10px] uppercase opacity-60">Маблағ (TJS)</Label>
+                    <Input type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-20 font-black text-5xl rounded-3xl" />
+                    <Input placeholder="Рақами корт" maxLength={16} value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} className="h-14 rounded-2xl" />
                   </div>
-
-                  <Button onClick={(e) => handleOpenSecure(e, 'deposit')} className="w-full bg-primary h-20 rounded-[2.5rem] text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-widest">
-                    <Plus className="h-7 w-7 mr-3" /> ТАСДИҚ ВА ПУР КАРДАН
-                  </Button>
+                  <Button onClick={(e) => handleOpenSecure(e, 'deposit')} className="w-full bg-primary h-20 rounded-[2.5rem] text-xl font-black uppercase shadow-2xl">ПУР КАРДАН</Button>
                 </TabsContent>
 
                 <TabsContent value="withdraw" className="p-10 space-y-8">
-                  <div className="space-y-6">
-                    <div className="space-y-2 text-center p-8 bg-red-500/5 rounded-[2.5rem] border-2 border-dashed border-red-500/10">
-                       <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
-                       <p className="text-xs font-bold text-red-600 leading-relaxed uppercase tracking-widest">Диққат: Бозхонд танҳо ба корте, ки қаблан истифода шуда буд, имконпазир аст.</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Маблағ барои гирифтан (TJS)</Label>
-                      <Input 
-                        type="number" 
-                        placeholder="0.00" 
-                        value={amount} 
-                        onChange={(e) => setAmount(e.target.value)} 
-                        className="h-20 font-black text-5xl rounded-3xl bg-muted/10 border-none px-6" 
-                      />
-                    </div>
-                  </div>
-
-                  <Button onClick={(e) => handleOpenSecure(e, 'withdraw')} className="w-full bg-secondary h-20 rounded-[2.5rem] text-xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-widest">
-                    <ArrowDownRight className="h-7 w-7 mr-3" /> ТАСДИҚ ВА ГИРИФТАН
-                  </Button>
+                  <Input type="number" placeholder="Маблағ" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-20 font-black text-5xl rounded-3xl" />
+                  <Button onClick={(e) => handleOpenSecure(e, 'withdraw')} className="w-full bg-secondary h-20 rounded-[2.5rem] text-xl font-black uppercase shadow-2xl">ГИРИФТАН</Button>
                 </TabsContent>
               </Tabs>
             </Card>
@@ -275,52 +159,23 @@ export default function WalletPage() {
       </div>
 
       <Dialog open={isSecureDialogOpen} onOpenChange={setIsSecureDialogOpen}>
-        <DialogContent className="rounded-[3rem] p-12 border-none shadow-3xl max-w-md">
+        <DialogContent className="rounded-[3rem] p-12 max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-4 text-3xl font-black text-secondary tracking-tighter uppercase">
-              <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
-                <Lock className="h-8 w-8 text-primary" />
-              </div>
-              ТАСДИҚИ АМНИЯТӢ
-            </DialogTitle>
-            <DialogDescription className="text-sm font-medium leading-relaxed pt-4">
-              Барои амалиёти <b className="text-secondary text-lg">{amount} TJS</b>, лутфан рамзи худро барои тасдиқи шахсият ворид кунед.
-            </DialogDescription>
+            <DialogTitle className="text-2xl font-black text-secondary uppercase">ТАСДИҚ</DialogTitle>
+            <DialogDescription>Рамзи акаунтро ворид кунед.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-8 pt-6">
-            <div className="space-y-2">
-              <Label className="font-black text-[10px] uppercase tracking-widest opacity-60">Рамзи акаунт</Label>
-              <Input 
-                type="password" 
-                placeholder="******" 
-                value={passwordConfirm} 
-                onChange={(e) => setPasswordConfirm(e.target.value)} 
-                className="h-16 rounded-2xl text-center text-3xl font-black bg-muted/20 border-muted tracking-[0.5em]" 
-              />
-            </div>
-            <Button 
-              onClick={handleActionSecure} 
-              disabled={loading} 
-              className="w-full bg-primary h-20 rounded-[2.5rem] font-black text-xl shadow-2xl transition-all hover:scale-[1.02] active:scale-95 uppercase tracking-widest"
-            >
-              {loading ? "ДАР ҲОЛИ ИҶРО..." : "ТАСДИҚ ВА ИҶРО"}
-            </Button>
+          <div className="space-y-6 pt-4">
+            <Input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className="h-16 rounded-2xl text-center text-3xl font-black tracking-widest" />
+            <Button onClick={handleActionSecure} disabled={loading} className="w-full bg-primary h-16 rounded-2xl font-black uppercase">{loading ? "ДАР ҲОЛИ ИҶРО..." : "ТАСДИҚ"}</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
-        <DialogContent className="rounded-[4rem] p-16 border-none shadow-3xl max-w-md text-center">
-          <div className="mx-auto h-24 w-24 bg-green-500 rounded-[2rem] flex items-center justify-center shadow-3xl shadow-green-500/40 mb-10 animate-bounce">
-            <CheckCircle2 className="h-14 w-14 text-white" />
-          </div>
-          <h3 className="text-4xl font-black text-secondary tracking-tighter uppercase mb-4">МУВАФФАҚИЯТ!</h3>
-          <p className="text-muted-foreground font-bold leading-relaxed mb-10">
-            Амалиёт бо муваффақият анҷом ёфт. Ин як амалиёти санҷишӣ (Demo) буд.
-          </p>
-          <Button onClick={() => setIsSuccessDialogOpen(false)} className="w-full bg-secondary h-16 rounded-2xl font-black uppercase tracking-widest">
-            ФАҲМО
-          </Button>
+        <DialogContent className="rounded-[4rem] p-16 max-w-md text-center">
+          <CheckCircle2 className="h-24 w-24 text-green-500 mx-auto mb-6" />
+          <h3 className="text-3xl font-black uppercase">МУВАФФАҚИЯТ!</h3>
+          <Button onClick={() => setIsSuccessDialogOpen(false)} className="w-full bg-secondary h-14 rounded-2xl font-black uppercase mt-8">ФАҲМО</Button>
         </DialogContent>
       </Dialog>
     </div>
