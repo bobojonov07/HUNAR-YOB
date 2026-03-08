@@ -16,7 +16,8 @@ import {
   Scale,
   Star,
   Ban,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -167,6 +168,7 @@ export default function ChatPage() {
   if (authLoading || !profile) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
 
   const isPremiumTheme = profile?.isPremium;
+  const isSameRole = profile.role === otherParty?.role;
 
   return (
     <div className={cn("flex flex-col h-screen", isPremiumTheme ? "bg-secondary" : "bg-background")}>
@@ -189,14 +191,26 @@ export default function ChatPage() {
             </div>
           </div>
           <Button 
-            disabled={profile?.identificationStatus !== 'Verified'} 
+            disabled={profile?.identificationStatus !== 'Verified' || isSameRole} 
             size="sm" 
-            onClick={() => router.push(`/create-deal/${listingId}?client=${targetClientId || user?.uid}`)} 
+            onClick={() => {
+              if (isSameRole) {
+                toast({ title: "Хатогӣ", description: "Шартнома танҳо байни Мизоҷ ва Усто имконпазир аст.", variant: "destructive" });
+                return;
+              }
+              router.push(`/create-deal/${listingId}?client=${targetClientId || user?.uid}`);
+            }} 
             className="rounded-full font-black text-[10px] px-6 h-10 bg-secondary text-white shadow-xl hover:scale-105 transition-all"
           >
             ШАРТНОМА
           </Button>
         </div>
+        {isSameRole && (
+          <div className="bg-red-500/10 p-2 flex items-center justify-center gap-2">
+            <Info className="h-3 w-3 text-red-500" />
+            <p className="text-[8px] font-black text-red-500 uppercase">ШУМО ВА ҲАМСУҲБАТ ЯК НАҚШ (ROLE) ДОРИД. ШАРТНОМА МАНЪ АСТ.</p>
+          </div>
+        )}
         <div className="px-6 pb-3 space-y-1">
           <Progress value={charProgress} className="h-1" />
         </div>
@@ -287,7 +301,6 @@ function DealCard({ dealId, isMe }: { dealId: string, isMe: boolean }) {
         return;
       }
       batch.update(doc(db, "deals", dealId), { status: 'Cancelled', cancelReason });
-      // Automatical 0 rating for cancellation if it was active
       if (deal.status === 'Active') {
         const ustoRef = doc(db, "users", deal.artisanId);
         batch.update(ustoRef, { warningCount: increment(1) });
@@ -310,7 +323,6 @@ function DealCard({ dealId, isMe }: { dealId: string, isMe: boolean }) {
         createdAt: serverTimestamp()
       });
       batch.update(doc(db, "deals", dealId), { status: 'Completed', completedAt: serverTimestamp(), reviewId: reviewRef.id });
-      // Pay the artisan
       batch.update(doc(db, "users", deal.artisanId), { balance: increment(deal.price) });
       setIsReviewOpen(false);
     } else {
@@ -376,6 +388,9 @@ function DealCard({ dealId, isMe }: { dealId: string, isMe: boolean }) {
               {[1, 2, 3, 4, 5].map(s => (
                 <Star key={s} onClick={() => setRating(s)} className={cn("h-8 w-8 cursor-pointer transition-all", rating >= s ? "fill-yellow-400 text-yellow-400" : "text-muted")} />
               ))}
+            </div>
+            <div className="bg-muted/30 p-4 rounded-2xl text-[10px] font-black uppercase opacity-60 flex items-center gap-2">
+              <Info className="h-4 w-4" /> Шарҳи шумо дар саҳифаи эълон нишон дода мешавад.
             </div>
             <Textarea placeholder={t.deal.review_placeholder} value={comment} onChange={e => setComment(e.target.value)} className="min-h-[100px] rounded-2xl" />
             <Button onClick={() => handleAction('Completed')} className="w-full bg-green-600 font-black h-12 rounded-xl uppercase">ФИРИСТОДАНИ БАҲО</Button>

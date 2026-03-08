@@ -14,7 +14,8 @@ import {
   ShieldCheck, 
   Loader2, 
   Lock, 
-  Wallet
+  Wallet,
+  AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc } from "@/firebase";
@@ -75,6 +76,15 @@ export default function CreateDealPage() {
       return;
     }
 
+    if (profile.role === otherParty.role) {
+      toast({ 
+        title: "Имконнопазир", 
+        description: `Ҳамсуҳбат ${otherParty.name} верификатсия накардааст ё нақши шумо якхела аст. Барои амнияти шумо мо наметавонем шартномаатонро бо ин шахс фаъол созем.`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     const dealRef = doc(collection(db, "deals"));
     const dealId = dealRef.id;
@@ -92,10 +102,8 @@ export default function CreateDealPage() {
     };
 
     try {
-      // 1. Create the deal document (Only as Pending request)
       await setDoc(dealRef, dealData);
 
-      // 2. Add message to chat
       const chatId = `${listingId}_${dealData.clientId}`;
       const msgRef = doc(collection(db, "chats", chatId, "messages"));
       await setDoc(msgRef, {
@@ -111,7 +119,6 @@ export default function CreateDealPage() {
         isPremiumSender: profile.isPremium || false
       });
 
-      // 3. Update chat last message
       await setDoc(doc(db, "chats", chatId), {
         lastMessage: "Дархости шартнома",
         lastSenderId: user.uid,
@@ -147,6 +154,16 @@ export default function CreateDealPage() {
             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">Бо {otherParty?.name}</p>
           </div>
 
+          {profile.role === otherParty?.role && (
+            <Alert variant="destructive" className="rounded-[2rem] border-2">
+              <AlertTriangle className="h-5 w-5" />
+              <AlertTitle className="font-black uppercase text-xs">МАНЪИ ШАРТНОМА</AlertTitle>
+              <AlertDescription className="text-[10px] font-bold uppercase">
+                Ҳамсуҳбат {otherParty?.name} нақши {otherParty?.role === 'Usto' ? 'УСТО' : 'МИЗОҶ'}-ро дорад. Шартнома танҳо байни Мизоҷ ва Усто имконпазир аст.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Alert className="bg-blue-50 border-blue-200 rounded-[2rem] p-6 border-2 border-dashed">
             <ShieldCheck className="h-6 w-6 text-blue-600" />
             <AlertTitle className="text-blue-700 font-black uppercase text-xs tracking-widest mb-2">РОЗИГИИ ТАРАФАЙН</AlertTitle>
@@ -158,6 +175,7 @@ export default function CreateDealPage() {
           <Card className="border-none shadow-3xl rounded-[3rem] overflow-hidden bg-white">
             <CardHeader className="bg-muted/10 pb-8">
               <CardTitle className="text-xl font-black text-secondary uppercase">ТАФСИЛОТИ КОР</CardTitle>
+              <p className="text-[9px] font-black text-primary uppercase">Барои эълони: {listing?.title}</p>
             </CardHeader>
             <CardContent className="p-10 space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -213,13 +231,13 @@ export default function CreateDealPage() {
                 <div className="p-6 bg-yellow-50 rounded-[2.5rem] flex items-start gap-4 border-2 border-dashed border-yellow-100">
                   <Lock className="h-6 w-6 text-yellow-500 shrink-0" />
                   <p className="text-[10px] font-black text-yellow-600 uppercase leading-relaxed">
-                    Пас аз қабули мизоҷ, маблағи {price || "0"} TJS дар Escrow-и платформа банд мешавад.
+                    Пас аз қабули мизоҷ, маблағи {price || "0"} TJS дар Escrow-и платформа банд мешавад. Шарҳ ва баҳои шумо ба ин эълон сабт мегардад.
                   </p>
                 </div>
 
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting || !title || !price || !duration} 
+                  disabled={isSubmitting || !title || !price || !duration || profile.role === otherParty?.role} 
                   className="w-full h-16 bg-primary font-black uppercase tracking-widest rounded-2xl shadow-2xl hover:scale-[1.02] transition-all"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin h-6 w-6" /> : "ФИРИСТОДАНИ ДАРХОСТ"}
