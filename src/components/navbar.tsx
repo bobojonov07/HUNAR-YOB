@@ -11,6 +11,7 @@ import { signOut } from "firebase/auth";
 import { useMemo } from "react";
 import { doc } from "firebase/firestore";
 import { UserProfile } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
