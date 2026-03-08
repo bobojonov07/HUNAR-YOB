@@ -23,7 +23,7 @@ import {
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, setDoc, arrayUnion } from "firebase/firestore";
 import { compressImage, cn } from "@/lib/utils";
 
 export default function VerifyPage() {
@@ -75,18 +75,16 @@ export default function VerifyPage() {
     if (!userProfileRef || !profile || !user) return;
     setIsLoading(true);
     
-    // Танҳо ҳолатро дар ҳуҷҷати 'users' нав мекунем
     const userUpdateData = {
       identificationStatus: 'Pending'
     };
 
-    // Тамоми маълумоти вазнин (суратҳо) танҳо дар 'verification_requests' сабт мешавад
-    const adminQueueData = {
+    // Маълумоти дархост (бе 'photos', зеро мо arrayUnion-ро истифода мебарем)
+    const requestData = {
       id: user.uid,
       userId: user.uid,
       userName: profile.name,
       userPhone: profile.phone || "Номаълум",
-      photos: photos,
       receipt: isRejected && !receipt ? "Re-submitted" : receipt,
       submittedAt: serverTimestamp(),
       status: 'Pending',
@@ -94,12 +92,16 @@ export default function VerifyPage() {
     };
 
     try {
-      // 1. Навсозии ҳолати корбар
+      // 1. Навсозии ҳолати корбар дар ҳуҷҷати 'users'
       await updateDoc(userProfileRef, userUpdateData);
       
-      // 2. Сабти маълумоти верификатсия
+      // 2. Сабти маълумоти верификатсия дар коллексияи 'verification_requests'
+      // Истифодаи arrayUnion барои илова кардани суратҳои нав ба рӯйхати мавҷуда
       const requestRef = doc(db, "verification_requests", user.uid);
-      await setDoc(requestRef, adminQueueData);
+      await setDoc(requestRef, {
+        ...requestData,
+        photos: arrayUnion(...photos)
+      }, { merge: true });
 
       toast({ 
         title: "Дархост фиристода шуд", 
