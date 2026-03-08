@@ -1,4 +1,3 @@
-
 "use client"
 
 import './globals.css';
@@ -42,7 +41,6 @@ export default function RootLayout({
   );
 }
 
-// Component to handle Blocked state and Cleanup
 function UserGuard({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const db = useFirestore();
@@ -51,18 +49,22 @@ function UserGuard({ children }: { children: React.ReactNode }) {
   const { data: profile } = useDoc<UserProfile>(userRef as any);
 
   useEffect(() => {
-    if (profile?.identificationStatus === 'Blocked' && user) {
-      // Cleanup: Delete user's listings if blocked
+    if ((profile?.identificationStatus === 'Blocked' || profile?.isBlocked || (profile?.warningCount || 0) >= 5) && user) {
       const cleanupListings = async () => {
         const q = query(collection(db, "listings"), where("userId", "==", user.uid));
         const snap = await getDocs(q);
         snap.forEach((d) => deleteDoc(d.ref));
+        
+        // Mark as blocked in Firestore if reached warning limit
+        if (!profile?.isBlocked && (profile?.warningCount || 0) >= 5) {
+          updateDoc(userRef!, { isBlocked: true, identificationStatus: 'Blocked' }).catch(() => {});
+        }
       };
       cleanupListings();
     }
-  }, [profile, user, db]);
+  }, [profile, user, db, userRef]);
 
-  if (profile?.identificationStatus === 'Blocked') {
+  if (profile?.identificationStatus === 'Blocked' || profile?.isBlocked || (profile?.warningCount || 0) >= 5) {
     return (
       <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center p-8 text-center">
         <div className="h-32 w-32 bg-red-100 rounded-[3rem] flex items-center justify-center mb-8 shadow-inner animate-bounce">
@@ -72,7 +74,7 @@ function UserGuard({ children }: { children: React.ReactNode }) {
         <div className="bg-red-50 p-8 rounded-[2rem] border-2 border-dashed border-red-200 max-w-md mb-8">
           <ShieldAlert className="h-8 w-8 text-red-500 mx-auto mb-4" />
           <p className="text-sm font-bold text-red-700 leading-relaxed uppercase">
-            БО САБАБИ ПЕШНИҲОДИ ЧЕКИ ҚАЛБАКӢ ВА ВАЙРОН КАРДАНИ ҚОИДАҲОИ ПЛАТФОРМА, АКАУНТИ ШУМО БАРОИ ҲАМЕША БЛОК ШУД.
+            БО САБАБИ ВАЙРОН КАРДАНИ ҚОИДАҲОИ ПЛАТФОРМА, ИСТИФОДАИ КАЛИМАҲОИ ҚАБЕҲ ВА Ё ГИРИФТАНИ 5 ОГОҲӢ, АКАУНТИ ШУМО БАРОИ ҲАМЕША БЛОК ШУД.
           </p>
         </div>
         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-10 opacity-60">

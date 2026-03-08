@@ -1,4 +1,3 @@
-
 'use client';
 
 export type UserRole = 'Usto' | 'Client';
@@ -19,6 +18,8 @@ export interface UserProfile {
   fcmTokens?: string[];
   lastActive?: any;
   createdAt: any;
+  warningCount: number;
+  isBlocked: boolean;
 }
 
 export interface VerificationRequest {
@@ -26,21 +27,20 @@ export interface VerificationRequest {
   userId: string;
   userName: string;
   userPhone: string;
-  photos: string[]; // [front, back, selfie]
-  receipt: string;  // image of receipt
+  photos: string[]; 
+  receipt: string;  
   status: IdentificationStatus;
   submittedAt: any;
   errorReason?: string;
 }
 
-export interface Transaction {
+export interface Complaint {
   id: string;
-  userId: string;
-  amount: number;
-  type: 'Deposit' | 'Withdrawal' | 'Payment' | 'Refund' | 'Verification';
-  status: 'Pending' | 'Completed' | 'Failed';
-  method: string;
+  reportedUserId: string;
+  reporterUserId: string;
+  reason: string;
   createdAt: any;
+  status: 'Pending' | 'Resolved';
 }
 
 export interface Listing {
