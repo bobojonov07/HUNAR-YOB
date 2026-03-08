@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState, useRef, useMemo } from "react";
@@ -6,7 +7,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Send, ShieldCheck, CheckCircle2, MessageSquare, Loader2, Crown, Sparkles, Wand2 } from "lucide-react";
+import { ChevronLeft, Send, ShieldCheck, CheckCircle2, MessageSquare, Loader2, Crown, Sparkles, Phone, PhoneOff, Mic, MicOff, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,8 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { doc, collection, query, orderBy, setDoc, serverTimestamp, getDoc, updateDoc, increment } from "firebase/firestore";
 import { Listing, Message, UserProfile, REGULAR_CHAR_LIMIT, PREMIUM_CHAR_LIMIT } from "@/lib/storage";
-import { improveMessage } from "@/ai/flows/improve-message-flow";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function formatDistanceToNowTajik(date: Date) {
   const now = new Date();
@@ -47,7 +48,11 @@ export default function ChatPage() {
   const [dealPrice, setDealPrice] = useState("");
   const [dealDuration, setDealDuration] = useState("");
   const [isDealDialogOpen, setIsDealDialogOpen] = useState(false);
-  const [isImproving, setIsImproving] = useState(false);
+  
+  // Audio Call States
+  const [isCalling, setIsCalling] = useState(false);
+  const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
 
   const listingRef = useMemo(() => listingId ? doc(db, "listings", listingId as string) : null, [db, listingId]);
   const { data: listing, loading: listingLoading } = useDoc<Listing>(listingRef as any);
@@ -92,11 +97,47 @@ export default function ChatPage() {
   }, [db, chatId]);
   const { data: messages = [], loading: messagesLoading } = useCollection<Message>(messagesQuery as any);
 
-  // If EITHER party is Premium, the limit is 5000
   const CHAR_LIMIT = (profile?.isPremium || otherParty?.isPremium) ? PREMIUM_CHAR_LIMIT : REGULAR_CHAR_LIMIT;
   const totalChars = useMemo(() => messages.reduce((sum, msg) => sum + (msg.text?.length || 0), 0), [messages]);
   const isLimitReached = totalChars >= CHAR_LIMIT;
   const charProgress = Math.min((totalChars / CHAR_LIMIT) * 100, 100);
+
+  // Audio Call Logic
+  const handleStartCall = async () => {
+    if (!profile?.isPremium || !otherParty?.isPremium) {
+      toast({ 
+        title: "Маҳдудияти Premium", 
+        description: "Аудио-занг танҳо байни корбарони Premium имконпазир аст.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+      setHasMicPermission(true);
+      setIsCalling(true);
+      toast({ title: "Занг оғоз шуд", description: `Дар ҳоли занг задан ба ${otherParty.name}...` });
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      setHasMicPermission(false);
+      toast({
+        variant: 'destructive',
+        title: 'Хатогии микрофон',
+        description: 'Лутфан иҷозати истифодаи микрофонро дар танзимоти браузер диҳед.',
+      });
+    }
+  };
+
+  const handleEndCall = () => {
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
+    }
+    setIsCalling(false);
+    toast({ title: "Занг ба охир расид" });
+  };
 
   useEffect(() => {
     if (!chatId || !user || !db || messagesLoading) return;
@@ -158,20 +199,6 @@ export default function ChatPage() {
     if (type === 'text') setNewMessage("");
   };
 
-  const handleAIImprove = async () => {
-    if (!newMessage.trim() || !profile?.isPremium) return;
-    setIsImproving(true);
-    try {
-      const { improvedText } = await improveMessage({ text: newMessage });
-      setNewMessage(improvedText);
-      toast({ title: "AI Таҳрир кард", description: "Матни шумо касбӣ шуд." });
-    } catch (e) {
-      toast({ title: "Хатогии AI", variant: "destructive" });
-    } finally {
-      setIsImproving(false);
-    }
-  };
-
   const lastActiveText = useMemo(() => {
     if (!otherParty?.lastActive) return "Офлайн";
     try {
@@ -187,6 +214,7 @@ export default function ChatPage() {
   }
 
   const isPremiumTheme = profile?.isPremium;
+  const canAudioCall = profile?.isPremium && otherParty?.isPremium;
 
   return (
     <div className={cn("flex flex-col h-screen transition-colors duration-500", isPremiumTheme ? "bg-secondary" : "bg-background")}>
@@ -197,17 +225,17 @@ export default function ChatPage() {
         isPremiumTheme ? "bg-black/40 backdrop-blur-xl border-white/10" : "bg-white"
       )}>
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn("rounded-full", isPremiumTheme ? "text-white" : "")}>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className={cn("rounded-full shrink-0", isPremiumTheme ? "text-white" : "")}>
               <ChevronLeft className="h-6 w-6" />
             </Button>
-            <Avatar className={cn("h-12 w-12 border-2", otherParty?.isPremium ? "border-yellow-400" : "border-muted")}>
+            <Avatar className={cn("h-12 w-12 border-2 shrink-0", otherParty?.isPremium ? "border-yellow-400" : "border-muted")}>
               <AvatarImage src={otherParty?.profileImage} className="object-cover" />
               <AvatarFallback className="bg-primary text-white font-black">{otherParty?.name?.charAt(0) || "?"}</AvatarFallback>
             </Avatar>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h3 className={cn("font-black text-base truncate max-w-[150px]", isPremiumTheme ? "text-white" : "text-secondary")}>
+                <h3 className={cn("font-black text-base truncate", isPremiumTheme ? "text-white" : "text-secondary")}>
                   {otherParty?.name || "Корбар"}
                 </h3>
                 {otherParty?.identificationStatus === 'Verified' && <CheckCircle2 className="h-4 w-4 text-primary" />}
@@ -217,23 +245,38 @@ export default function ChatPage() {
             </div>
           </div>
 
-          <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
-            <Button size="sm" onClick={() => setIsDealDialogOpen(true)} className={cn(
-              "rounded-full font-black text-[10px] px-6 h-10 shadow-xl transition-all hover:scale-105",
-              isPremiumTheme ? "bg-yellow-500 text-secondary" : "bg-secondary text-white"
-            )}>ШАРТНОМА</Button>
-            <DialogContent className="rounded-3xl p-8 max-w-sm">
-              <DialogHeader><DialogTitle className="font-black uppercase tracking-tighter">ДАРХОСТИ КОР</DialogTitle></DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-60">Номи кор</Label><Input placeholder="Масалан: Сохтани шкаф" value={dealTitle} onChange={e => setDealTitle(e.target.value)} /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-60">Нарх (TJS)</Label><Input type="number" value={dealPrice} onChange={e => setDealPrice(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-60">Мӯҳлат (рӯз)</Label><Input type="number" value={dealDuration} onChange={e => setDealDuration(e.target.value)} /></div>
+          <div className="flex items-center gap-2">
+            {canAudioCall && (
+              <Button 
+                onClick={handleStartCall}
+                size="icon" 
+                className={cn(
+                  "rounded-full h-10 w-10 shadow-xl transition-all hover:scale-110",
+                  isPremiumTheme ? "bg-green-500 text-white" : "bg-secondary text-white"
+                )}
+              >
+                <Phone className="h-5 w-5" />
+              </Button>
+            )}
+
+            <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
+              <Button size="sm" onClick={() => setIsDealDialogOpen(true)} className={cn(
+                "rounded-full font-black text-[10px] px-6 h-10 shadow-xl transition-all hover:scale-105",
+                isPremiumTheme ? "bg-yellow-500 text-secondary" : "bg-secondary text-white"
+              )}>ШАРТНОМА</Button>
+              <DialogContent className="rounded-3xl p-8 max-w-sm">
+                <DialogHeader><DialogTitle className="font-black uppercase tracking-tighter">ДАРХОСТИ КОР</DialogTitle></DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-60">Номи кор</Label><Input placeholder="Масалан: Сохтани шкаф" value={dealTitle} onChange={e => setDealTitle(e.target.value)} /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-60">Нарх (TJS)</Label><Input type="number" value={dealPrice} onChange={e => setDealPrice(e.target.value)} /></div>
+                    <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-60">Мӯҳлат (рӯз)</Label><Input type="number" value={dealDuration} onChange={e => setDealDuration(e.target.value)} /></div>
+                  </div>
+                  <Button onClick={() => { handleSendMessage(undefined, 'deal'); setIsDealDialogOpen(false); }} className="w-full bg-primary h-12 font-black uppercase">ФИРИСТОДАН</Button>
                 </div>
-                <Button onClick={() => { handleSendMessage(undefined, 'deal'); setIsDealDialogOpen(false); }} className="w-full bg-primary h-12 font-black uppercase">ФИРИСТОДАН</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         
         <div className="px-6 pb-3 space-y-1">
@@ -246,6 +289,41 @@ export default function ChatPage() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+        {isCalling && (
+          <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+            <div className="relative mb-8">
+              <Avatar className="h-40 w-40 border-4 border-green-500 shadow-[0_0_50px_rgba(34,197,94,0.3)]">
+                <AvatarImage src={otherParty?.profileImage} className="object-cover" />
+                <AvatarFallback className="text-4xl bg-primary text-white font-black">{otherParty?.name?.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 p-3 rounded-full animate-bounce">
+                <Mic className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">{otherParty?.name}</h2>
+            <p className="text-green-500 font-bold uppercase tracking-widest text-sm animate-pulse">Дар ҳоли занг задан...</p>
+            
+            <div className="mt-20 flex gap-8">
+              <Button 
+                onClick={handleEndCall}
+                className="h-20 w-20 rounded-full bg-red-500 hover:bg-red-600 shadow-2xl transition-transform active:scale-90"
+              >
+                <PhoneOff className="h-8 w-8 text-white" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {hasMicPermission === false && (
+          <Alert variant="destructive" className="rounded-3xl border-2 border-dashed">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Дастрасӣ ба микрофон лозим аст</AlertTitle>
+            <AlertDescription>
+              Барои истифодаи занги аудиоӣ, лутфан ба микрофон иҷозат диҳед.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {messages.length === 0 && !messagesLoading ? (
           <div className="h-full flex flex-col items-center justify-center opacity-20 text-center">
             <MessageSquare className={cn("h-20 w-20 mb-4", isPremiumTheme ? "text-white" : "")} />
@@ -282,20 +360,6 @@ export default function ChatPage() {
       )}>
         {!isLimitReached ? (
           <form onSubmit={(e) => handleSendMessage(e)} className="flex gap-3 max-w-4xl mx-auto items-center">
-            {profile?.isPremium && (
-              <Button 
-                type="button" 
-                onClick={handleAIImprove} 
-                disabled={isImproving || !newMessage.trim()}
-                variant="outline"
-                className={cn(
-                  "rounded-full h-14 w-14 shrink-0 border-2",
-                  isPremiumTheme ? "border-yellow-400 text-yellow-400 bg-white/5" : "border-primary text-primary"
-                )}
-              >
-                {isImproving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Wand2 className="h-5 w-5" />}
-              </Button>
-            )}
             <Input 
               placeholder="Нависед..." 
               value={newMessage} 
