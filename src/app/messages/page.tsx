@@ -6,16 +6,17 @@ import { Navbar } from "@/components/navbar";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, CheckCheck, ChevronLeft, Loader2, CheckCircle2, Crown, Trash2, Filter } from "lucide-react";
+import { MessageSquare, CheckCheck, Check, ChevronLeft, Loader2, CheckCircle2, Crown, Trash2, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { collection, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
-import { Chat, UserProfile } from "@/lib/storage";
+import { Chat, UserProfile, Message } from "@/lib/storage";
 
 interface Conversation extends Chat {
   otherParty: UserProfile | null;
+  lastMessageFull?: Message | null;
 }
 
 export default function MessagesList() {
@@ -57,7 +58,6 @@ export default function MessagesList() {
 
       const allChatsMap = new Map<string, Chat>();
       [...clientChats, ...artisanChats].forEach(chat => {
-        // Намоиш надодани чатҳои нестшуда
         if (!chat.deletedBy?.includes(user.uid)) {
           allChatsMap.set(chat.id, chat);
         }
@@ -89,9 +89,25 @@ export default function MessagesList() {
           }
         }
         
+        // Fetch last message details for read status
+        let lastMsgDetails = null;
+        try {
+          const msgQuery = query(
+            collection(db, "chats", chat.id, "messages"),
+            orderBy("createdAt", "desc"),
+            where("senderId", "==", user.uid),
+            limit(1)
+          );
+          const msgSnap = await getDocs(msgQuery);
+          if (!msgSnap.empty) {
+            lastMsgDetails = { ...msgSnap.docs[0].data(), id: msgSnap.docs[0].id } as Message;
+          }
+        } catch (e) {}
+
         results.push({
           ...chat,
-          otherParty: otherProfile || null
+          otherParty: otherProfile || null,
+          lastMessageFull: lastMsgDetails
         });
       }
       
@@ -233,7 +249,13 @@ function ConversationItem({ conv, currentUser }: { conv: Conversation, currentUs
             </div>
             <div className="flex items-center gap-2">
               {conv.lastSenderId === currentUser.uid && (
-                <CheckCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                <div className="shrink-0">
+                  {conv.lastMessageFull?.isRead ? (
+                    <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5 text-muted-foreground opacity-60" />
+                  )}
+                </div>
               )}
               <p className={cn(
                 "text-xs truncate font-medium text-muted-foreground",

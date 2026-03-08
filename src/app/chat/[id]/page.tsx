@@ -7,16 +7,50 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Send, ShieldCheck, CheckCircle2, MessageSquare, Loader2, Crown, Sparkles, AlertCircle, Flag, Pencil, Trash2, X } from "lucide-react";
+import { 
+  ChevronLeft, 
+  Send, 
+  CheckCircle2, 
+  Loader2, 
+  Crown, 
+  Flag, 
+  Pencil, 
+  Trash2, 
+  X, 
+  Check, 
+  CheckCheck,
+  MoreVertical
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, collection, query, orderBy, setDoc, serverTimestamp, getDoc, updateDoc, increment, addDoc, arrayUnion } from "firebase/firestore";
+import { 
+  doc, 
+  collection, 
+  query, 
+  orderBy, 
+  setDoc, 
+  serverTimestamp, 
+  getDoc, 
+  updateDoc, 
+  increment, 
+  addDoc, 
+  arrayUnion,
+  writeBatch,
+  where,
+  getDocs
+} from "firebase/firestore";
 import { Listing, Message, UserProfile, REGULAR_CHAR_LIMIT, PREMIUM_CHAR_LIMIT } from "@/lib/storage";
 import { cn, hasProfanity } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ChatPage() {
   const { id: listingId } = useParams();
@@ -82,9 +116,24 @@ export default function ChatPage() {
     if (!db || !chatId) return null;
     return query(collection(db, "chats", chatId, "messages"), orderBy("createdAt", "asc"));
   }, [db, chatId]);
-  const { data: messages = [], loading: messagesLoading } = useCollection<Message>(messagesQuery as any);
+  const { data: messages = [] } = useCollection<Message>(messagesQuery as any);
 
-  const isBothPremium = profile?.isPremium && otherParty?.isPremium;
+  // Mark messages as read
+  useEffect(() => {
+    if (!user || !chatId || messages.length === 0) return;
+    
+    const unreadMessages = messages.filter(m => m.senderId !== user.uid && !m.isRead);
+    if (unreadMessages.length > 0) {
+      const batch = writeBatch(db);
+      unreadMessages.forEach(msg => {
+        batch.update(doc(db, "chats", chatId, "messages", msg.id), { isRead: true });
+      });
+      // Also reset unread count in chat doc
+      batch.update(doc(db, "chats", chatId), { [`unreadCount.${user.uid}`]: 0 });
+      batch.commit().catch(() => {});
+    }
+  }, [user, chatId, messages, db]);
+
   const isOnePremium = profile?.isPremium || otherParty?.isPremium;
   const CHAR_LIMIT = isOnePremium ? PREMIUM_CHAR_LIMIT : REGULAR_CHAR_LIMIT;
   
@@ -147,7 +196,7 @@ export default function ChatPage() {
       lastSenderId: user.uid,
       updatedAt: serverTimestamp(),
       [`unreadCount.${otherParty?.id || ""}`]: increment(1),
-      deletedBy: [] // Бозгашт ба ҳолати фаъол агар паём фиристода шавад
+      deletedBy: [] 
     }, { merge: true });
 
     setDoc(msgRef, messageData).catch((err) => {
@@ -299,7 +348,7 @@ export default function ChatPage() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.filter(m => !m.deletedFor?.includes(user?.uid || "")).map((msg) => {
           const isMe = msg.senderId === user?.uid;
-          const canEdit = isMe && profile?.isPremium && (Date.now() - (msg.createdAt?.toMillis() || 0) < 600000); // 10 mins
+          const canEdit = isMe && profile?.isPremium && (Date.now() - (msg.createdAt?.toMillis() || 0) < 600000); 
 
           return (
             <div key={msg.id} className={cn("flex flex-col group", isMe ? 'items-end' : 'items-start')}>
@@ -320,16 +369,54 @@ export default function ChatPage() {
                 ) : (
                   <>
                     <p className="text-sm font-bold leading-relaxed">{msg.text}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-[8px] font-black uppercase opacity-60">
-                        {msg.createdAt?.toDate()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {msg.isEdited && " (таҳриршуда)"}
-                      </span>
-                      {profile?.isPremium && (
+                    <div className="flex justify-between items-center mt-2 gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-black uppercase opacity-60">
+                          {msg.createdAt?.toDate()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {msg.isEdited && " (таҳриршуда)"}
+                        </span>
+                        {isMe && !msg.isDeletedForEveryone && (
+                          <div className="flex shrink-0">
+                            {msg.isRead ? (
+                              <CheckCheck className="h-3 w-3 text-blue-400" />
+                            ) : (
+                              <Check className="h-3 w-3 opacity-60" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {profile?.isPremium && !msg.isDeletedForEveryone && (
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {canEdit && <button onClick={() => { setEditingMessageId(msg.id); setEditValue(msg.text); }} className="text-white/50 hover:text-white"><Pencil className="h-3 w-3" /></button>}
-                          <button onClick={() => handleDeleteMessage(msg.id, false)} className="text-white/50 hover:text-white"><Trash2 className="h-3 w-3" /></button>
-                          {isMe && <button onClick={() => handleDeleteMessage(msg.id, true)} className="text-red-300 hover:text-red-500"><X className="h-3 w-3" /></button>}
+                          {canEdit && (
+                            <button onClick={() => { setEditingMessageId(msg.id); setEditValue(msg.text); }} className="text-white/50 hover:text-white">
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="text-white/50 hover:text-white">
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="rounded-2xl p-2 border-none shadow-2xl bg-white">
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteMessage(msg.id, false)}
+                                className="font-black text-[10px] uppercase cursor-pointer text-secondary"
+                              >
+                                БАРОИ ХУДАМ
+                              </DropdownMenuItem>
+                              {isMe && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteMessage(msg.id, true)}
+                                  className="font-black text-[10px] uppercase cursor-pointer text-red-500"
+                                >
+                                  БАРОИ ҲАМА
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </div>
