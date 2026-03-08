@@ -22,7 +22,7 @@ import {
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { compressImage, cn } from "@/lib/utils";
 
 export default function VerifyPage() {
@@ -71,10 +71,11 @@ export default function VerifyPage() {
   };
 
   const handleSubmit = async () => {
-    if (!userProfileRef) return;
+    if (!userProfileRef || !profile || !user) return;
     setIsLoading(true);
     
-    const updateData = {
+    // 1. Маълумот барои профили корбар
+    const userUpdateData = {
       identificationStatus: 'Pending',
       kycPhotos: photos,
       kycPaymentCheck: isRejected ? (profile?.kycPaymentCheck || "") : receipt,
@@ -82,25 +83,40 @@ export default function VerifyPage() {
       errorReason: "" 
     };
 
-    console.log("Sending verification data to Firestore...", updateData);
+    // 2. Маълумот барои коллексияи махсуси админ (Queue)
+    const adminQueueData = {
+      userId: user.uid,
+      userName: profile.name,
+      userPhone: profile.phone || "Номаълум",
+      photos: photos,
+      receipt: isRejected ? (profile?.kycPaymentCheck || "") : receipt,
+      submittedAt: serverTimestamp(),
+      status: 'Pending'
+    };
 
-    updateDoc(userProfileRef, updateData)
-      .then(() => {
-        toast({ title: "Дархост фиристода шуд", description: "Мо дар муддати 24 соат тафтиш мекунем." });
-        // After updating, the profile data in this component should trigger re-render
-        // but let's force a push to profile just in case
-        router.push("/profile");
-      })
-      .catch((err) => {
-        console.error("Verification error:", err);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: userProfileRef.path,
-          operation: 'update',
-          requestResourceData: updateData
-        }));
-        toast({ title: "Хатогӣ ҳангоми фиристодан", variant: "destructive" });
-      })
-      .finally(() => setIsLoading(false));
+    console.log("Фиристодани маълумот ба Firestore...", { userUpdateData, adminQueueData });
+
+    try {
+      // Навсозии профили корбар
+      await updateDoc(userProfileRef, userUpdateData);
+      
+      // Илова кардан ба коллексияи "verification_requests" барои осонии кори админ
+      const requestRef = doc(db, "verification_requests", user.uid);
+      await setDoc(requestRef, adminQueueData);
+
+      toast({ title: "Дархост фиристода шуд", description: "Мо дар муддати 24 соат тафтиш мекунем." });
+      router.push("/profile");
+    } catch (err: any) {
+      console.error("Verification error:", err);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userProfileRef.path,
+        operation: 'update',
+        requestResourceData: userUpdateData
+      }));
+      toast({ title: "Хатогӣ ҳангоми фиристодан", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const nextStep = () => {
@@ -110,7 +126,7 @@ export default function VerifyPage() {
       } else {
         setStep(2);
       }
-    } else {
+    } else if (step < 3) {
       setStep(step + 1);
     }
   };
@@ -123,7 +139,6 @@ export default function VerifyPage() {
     );
   }
 
-  // --- ЭКРАНИ ПЕНДИНГ (Pending Screen) ---
   if (isPending) {
     return (
       <div className="min-h-screen bg-background">
@@ -293,7 +308,7 @@ export default function VerifyPage() {
                   </div>
 
                   <Button 
-                    disabled={!receipt && !isRejected || isLoading} 
+                    disabled={(!receipt && !isRejected) || isLoading} 
                     onClick={handleSubmit} 
                     className="w-full bg-secondary h-16 rounded-2xl font-black uppercase tracking-widest shadow-xl"
                   >

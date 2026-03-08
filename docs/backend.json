@@ -1,0 +1,54 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Маълумоти шахсии корбар ва ҳолати верификатсия",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["Usto", "Client"] },
+        "phone": { "type": "string" },
+        "region": { "type": "string" },
+        "balance": { "type": "number" },
+        "identificationStatus": { "type": "string", "enum": ["None", "Pending", "Verified", "Rejected", "Blocked"] },
+        "kycPhotos": { "type": "array", "items": { "type": "string" } },
+        "kycPaymentCheck": { "type": "string" },
+        "kycSubmittedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "VerificationRequest": {
+      "title": "VerificationRequest",
+      "description": "Дархости верификатсия барои баррасии админ",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhone": { "type": "string" },
+        "photos": { "type": "array", "items": { "type": "string" } },
+        "receipt": { "type": "string" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Pending", "Reviewed"] }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["email", "google"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Профилҳои корбарон"
+    },
+    "/verification_requests/{userId}": {
+      "schema": "VerificationRequest",
+      "description": "Навбати дархостҳо барои админ (KYC Queue)"
+    },
+    "/listings/{listingId}": {
+      "schema": "Listing",
+      "description": "Эълонҳои устоҳо"
+    }
+  }
+}
