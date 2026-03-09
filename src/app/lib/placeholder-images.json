@@ -8,28 +8,10 @@
       "imageHint": "artisan craft"
     },
     {
-      "id": "carpentry",
-      "description": "Woodworking tools and project",
-      "imageUrl": "https://images.unsplash.com/photo-1683115099119-1af60e697f9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjYXJwZW50cnklMjB0b29sc3xlbnwwfHx8fDE3NzE1MDQ2MDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "carpentry tools"
-    },
-    {
-      "id": "tailoring",
-      "description": "Tailor measuring fabric",
-      "imageUrl": "https://images.unsplash.com/photo-1625479141886-48f087e62d01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx0YWlsb3IlMjBzZXdpbmd8ZW58MHx8fHwxNzcxNTA0NjA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "tailor sewing"
-    },
-    {
-      "id": "tech-repair",
-      "description": "Technician repairing electronics",
-      "imageUrl": "https://images.unsplash.com/photo-1515787766711-f9de50ca9023?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxlbGVjdHJvbmljcyUyMHJlcGFpcnxlbnwwfHx8fDE3NzE0MjYzMjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "electronics repair"
-    },
-    {
-      "id": "cooking",
-      "description": "Chef preparing a traditional meal",
-      "imageUrl": "https://images.unsplash.com/photo-1577219492769-b63a779fac28?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjaGVmJTIwY29va2luZ3xlbnwwfHx8fDE3NzE0MDA0Mzl8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "chef cooking"
+      "id": "premium-badge",
+      "description": "Premium quality badge",
+      "imageUrl": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+      "imageHint": "premium badge"
     }
   ]
 }

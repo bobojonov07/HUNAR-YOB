@@ -13,61 +13,33 @@
         "phone": { "type": "string" },
         "region": { "type": "string" },
         "balance": { "type": "number" },
+        "isPremium": { "type": "boolean" },
         "identificationStatus": { "type": "string", "enum": ["None", "Pending", "Verified", "Rejected", "Blocked"] }
       }
     },
-    "DepositRequest": {
-      "title": "DepositRequest",
-      "description": "Дархости пур кардани ҳисоб тавассути чек",
+    "PremiumRequest": {
+      "title": "PremiumRequest",
+      "description": "Дархост барои хариди статуси Premium тавассути чек",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "userName": { "type": "string" },
-        "amount": { "type": "number" },
         "receiptImage": { "type": "string" },
         "status": { "type": "string", "enum": ["Pending", "Completed", "Rejected"] },
         "submittedAt": { "type": "string", "format": "date-time" }
       }
     },
-    "WithdrawalRequest": {
-      "title": "WithdrawalRequest",
-      "description": "Дархости бозхонди маблағ ба корт",
+    "VerificationRequest": {
+      "title": "VerificationRequest",
+      "description": "Дархост барои тасдиқи шахсият",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "userName": { "type": "string" },
-        "amount": { "type": "number" },
-        "cardNumber": { "type": "string" },
-        "withdrawalType": { "type": "string", "enum": ["DC", "Phone", "KortiMilli"] },
-        "status": { "type": "string", "enum": ["Pending", "Completed", "Rejected"] },
+        "photos": { "type": "array", "items": { "type": "string" } },
+        "receipt": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Verified", "Rejected"] },
         "submittedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Deal": {
-      "title": "Deal",
-      "description": "Шартномаи байни мизоҷ ва усто",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "clientId": { "type": "string" },
-        "artisanId": { "type": "string" },
-        "title": { "type": "string" },
-        "price": { "type": "number" },
-        "status": { "type": "string", "enum": ["Pending", "Active", "Completed", "Cancelled"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Transaction": {
-      "title": "Transaction",
-      "description": "Таърихи амалиётҳои молиявии корбар",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "amount": { "type": "number" },
-        "type": { "type": "string", "enum": ["Deposit", "Withdrawal", "PremiumPurchase", "DealPayment"] },
-        "status": { "type": "string", "enum": ["Pending", "Completed", "Rejected"] },
-        "description": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -79,21 +51,17 @@
       "schema": "UserProfile",
       "description": "Профилҳои асосии корбарон"
     },
-    "/deposit_requests/{userId}": {
-      "schema": "DepositRequest",
-      "description": "Дархостҳои пур кардани ҳисоб"
+    "/premium_requests/{userId}": {
+      "schema": "PremiumRequest",
+      "description": "Дархостҳои хариди Premium"
     },
-    "/withdrawal_requests/{userId}": {
-      "schema": "WithdrawalRequest",
-      "description": "Дархостҳои бозхонди маблағ"
+    "/verification_requests/{userId}": {
+      "schema": "VerificationRequest",
+      "description": "Дархостҳои верификатсияи паспорт"
     },
-    "/deals/{dealId}": {
-      "schema": "Deal",
-      "description": "Шартномаҳои басташуда"
-    },
-    "/transactions/{transactionId}": {
-      "schema": "Transaction",
-      "description": "Таърихи транзаксияҳо"
+    "/listings/{listingId}": {
+      "schema": "Listing",
+      "description": "Эълонҳои ҳунармандон"
     }
   }
 }
