@@ -23,10 +23,11 @@ export function hasProfanity(text: string): boolean {
 }
 
 /**
- * Фишурдани сурат бо сифати максималӣ (100%) ва андозаи калон (1920px).
- * Сифати 1.0 ва imageSmoothingQuality 'high' истифода мешавад, то сурат хира нашавад.
+ * Фишурдани сурат бо сифати баланд.
+ * Барои пешгирӣ аз хатогии Firestore (лимити 1МБ), андоза ба 1200px ва сифат ба 0.8 танзим шуд.
+ * Ин сифати "Retina" -ро таъмин мекунад ва сурат аслан хира намешавад.
  */
-export async function compressImage(base64Str: string, maxWidth = 1920, quality = 1.0): Promise<string> {
+export async function compressImage(base64Str: string, maxWidth = 1200, quality = 0.8): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -50,7 +51,8 @@ export async function compressImage(base64Str: string, maxWidth = 1920, quality 
         ctx.drawImage(img, 0, 0, width, height);
       }
       
-      resolve(canvas.toDataURL('image/jpeg', 1.0));
+      // Истифодаи 0.8 сифати аълоро нигоҳ медорад ва ҳаҷмро хеле кам мекунад
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
   });
 }

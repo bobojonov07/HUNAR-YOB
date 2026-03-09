@@ -66,7 +66,8 @@ export default function CreateListing() {
         const compressed = await new Promise<string>((resolve, reject) => {
           reader.onloadend = async () => {
             try {
-              const res = await compressImage(reader.result as string, 1920, 1.0);
+              // Оптимизатсияшуда барои сифати баланд ва ҳаҷми кам
+              const res = await compressImage(reader.result as string, 1200, 0.8);
               resolve(res);
             } catch (err) {
               reject(err);
@@ -107,44 +108,48 @@ export default function CreateListing() {
 
     setIsSubmitting(true);
     
-    // Санҷиши дақиқи калимаҳои қабеҳ
-    if (hasProfanity(`${title} ${description}`)) {
-      const newWarningCount = (profile.warningCount || 0) + 1;
-      await updateDoc(userProfileRef, { 
-        warningCount: increment(1),
-        isBlocked: newWarningCount >= 5,
-        identificationStatus: newWarningCount >= 5 ? 'Blocked' : profile.identificationStatus
-      });
-      toast({ 
-        title: "Огоҳӣ!", 
-        description: `Дар эълон калимаҳои қабеҳ ёфт шуд. Огоҳии шумо: ${newWarningCount}/5.`, 
-        variant: "destructive" 
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const listingRef = doc(collection(db, "listings"));
-    const listingData = {
-      id: listingRef.id,
-      userId: user.uid,
-      userName: profile.name,
-      userPhone: profile.phone || "",
-      title,
-      category,
-      description,
-      images: imageUrls,
-      createdAt: serverTimestamp(),
-      isVip: profile.isPremium || false,
-      views: 0
-    };
-
     try {
+      if (hasProfanity(`${title} ${description}`)) {
+        const newWarningCount = (profile.warningCount || 0) + 1;
+        await updateDoc(userProfileRef, { 
+          warningCount: increment(1),
+          isBlocked: newWarningCount >= 5,
+          identificationStatus: newWarningCount >= 5 ? 'Blocked' : profile.identificationStatus
+        });
+        toast({ 
+          title: "Огоҳӣ!", 
+          description: `Дар эълон калимаҳои қабеҳ ёфт шуд. Огоҳии шумо: ${newWarningCount}/5.`, 
+          variant: "destructive" 
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const listingRef = doc(collection(db, "listings"));
+      const listingData = {
+        id: listingRef.id,
+        userId: user.uid,
+        userName: profile.name,
+        userPhone: profile.phone || "",
+        title: title.trim(),
+        category,
+        description: description.trim(),
+        images: imageUrls,
+        createdAt: serverTimestamp(),
+        isVip: profile.isPremium || false,
+        views: 0
+      };
+
       await setDoc(listingRef, listingData);
       toast({ title: "Эълон нашр шуд" });
       router.push("/");
     } catch (err: any) {
       console.error("Submit error:", err);
+      toast({ 
+        title: "Хатогӣ ҳангоми нашр", 
+        description: "Ҳаҷми суратҳо хеле калон аст ё хатогӣ дар сервер рӯй дод. Лутфан суратҳои камтарро санҷед.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSubmitting(false);
     }
