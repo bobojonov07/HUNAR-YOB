@@ -24,13 +24,14 @@ import {
   Crown,
   Phone,
   MapPin,
-  Clock
+  Clock,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, updateDoc, collection, query, where } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, deleteDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
 import { compressImage, cn } from "@/lib/utils";
@@ -58,11 +59,22 @@ export default function Profile() {
     if (file && user && userProfileRef) {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const compressed = await compressImage(reader.result as string, 1024, 1.0);
+        // Сифати баланд барои профил
+        const compressed = await compressImage(reader.result as string, 1920, 1.0);
         updateDoc(userProfileRef, { profileImage: compressed });
         toast({ title: "Сурат навсозӣ шуд" });
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDeleteListing = async (listingId: string) => {
+    if (!confirm("Оё мехоҳед ин эълонро нест кунед?")) return;
+    try {
+      await deleteDoc(doc(db, "listings", listingId));
+      toast({ title: "Эълон нест карда шуд" });
+    } catch (err) {
+      toast({ title: "Хатогӣ ҳангоми несткунӣ", variant: "destructive" });
     }
   };
 
@@ -159,7 +171,7 @@ export default function Profile() {
                         <Clock className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600 mb-1">Premium фаъол аст то:</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600 mb-1">Premium то:</p>
                         <p className="text-lg font-black text-yellow-700 tracking-tighter">{premiumExpiryDate}</p>
                       </div>
                     </div>
@@ -218,11 +230,20 @@ export default function Profile() {
                           <Image src={listing.images[0]} alt={listing.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                           <div className="absolute top-4 right-4"><Badge className="bg-white/90 backdrop-blur-md text-secondary font-black">{listing.category}</Badge></div>
                         </div>
-                        <div className="p-8">
-                          <h3 className="text-xl font-black text-secondary mb-6 truncate uppercase tracking-tighter">{listing.title}</h3>
-                          <Button asChild className="w-full rounded-xl h-12 font-black uppercase text-[10px] tracking-widest bg-primary shadow-lg">
-                            <Link href={`/listing/${listing.id}`}>ДИДАН</Link>
-                          </Button>
+                        <div className="p-8 space-y-4">
+                          <h3 className="text-xl font-black text-secondary truncate uppercase tracking-tighter">{listing.title}</h3>
+                          <div className="flex gap-2">
+                            <Button asChild className="flex-1 rounded-xl h-12 font-black uppercase text-[10px] tracking-widest bg-primary shadow-lg">
+                              <Link href={`/listing/${listing.id}`}>ДИДАН</Link>
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              onClick={() => handleDeleteListing(listing.id)}
+                              className="w-12 h-12 rounded-xl flex items-center justify-center p-0 shadow-lg"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </div>
                         </div>
                       </Card>
                     ))}

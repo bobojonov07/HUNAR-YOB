@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState, useRef, useMemo } from "react";
@@ -62,7 +63,7 @@ export default function CreateListing() {
     for (const file of Array.from(files)) {
       const reader = new FileReader();
       const compressed = await new Promise<string>((resolve) => {
-        reader.onloadend = async () => resolve(await compressImage(reader.result as string, 800, 0.7));
+        reader.onloadend = async () => resolve(await compressImage(reader.result as string, 1920, 1.0));
         reader.readAsDataURL(file);
       });
       newImages.push(compressed);
@@ -162,7 +163,7 @@ export default function CreateListing() {
                   <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                   <Button type="button" disabled={isCompressing || isSubmitting} variant="outline" className="w-full h-32 border-dashed border-2 rounded-2xl" onClick={() => fileInputRef.current?.click()}>
                     {isCompressing ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <Upload className="h-8 w-8 text-muted-foreground" />}
-                    <span className="font-bold text-xs uppercase tracking-widest">Иловаи суратҳо</span>
+                    <span className="font-black text-xs uppercase tracking-widest">Иловаи суратҳо</span>
                   </Button>
                   <div className="grid grid-cols-5 gap-3 mt-4">
                     {imageUrls.map((url, index) => (

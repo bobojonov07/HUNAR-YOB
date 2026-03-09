@@ -17,7 +17,7 @@ export function hasProfanity(text: string): boolean {
 }
 
 /**
- * Фишурдани сурат бо сифати баланд.
+ * Фишурдани сурат бо сифати максималӣ (100%).
  */
 export async function compressImage(base64Str: string, maxWidth = 1920, quality = 1.0): Promise<string> {
   return new Promise((resolve) => {
@@ -29,6 +29,7 @@ export async function compressImage(base64Str: string, maxWidth = 1920, quality 
       let width = img.width;
       let height = img.height;
 
+      // Танҳо агар сурат аз 1920px калон бошад, онро хурд мекунем
       if (width > maxWidth) {
         height = (maxWidth / width) * height;
         width = maxWidth;
@@ -43,7 +44,8 @@ export async function compressImage(base64Str: string, maxWidth = 1920, quality 
         ctx.drawImage(img, 0, 0, width, height);
       }
       
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      // Истифодаи сифати 1.0 барои пешгирии хирагӣ
+      resolve(canvas.toDataURL('image/jpeg', 1.0));
     };
   });
 }
