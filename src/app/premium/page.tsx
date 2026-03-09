@@ -47,7 +47,7 @@ export default function PremiumPurchasePage() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       try {
-        const compressed = await compressImage(reader.result as string, 1200, 0.9);
+        const compressed = await compressImage(reader.result as string, 1200, 1.0);
         setReceipt(compressed);
       } catch (err) {
         console.error("Image compression error:", err);

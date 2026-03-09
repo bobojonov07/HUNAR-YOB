@@ -9,10 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Settings, 
@@ -22,20 +18,20 @@ import {
   Loader2, 
   CheckCircle2, 
   Calendar,
-  Lock,
   User,
   ShieldCheck,
   PlusCircle,
   Crown,
   Phone,
-  MapPin
+  MapPin,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { doc, updateDoc, collection, query, where } from "firebase/firestore";
-import { signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
 import { compressImage, cn } from "@/lib/utils";
 
@@ -55,71 +51,18 @@ export default function Profile() {
   }, [db, user]);
   const { data: myListings = [] } = useCollection<Listing>(listingsQuery as any);
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const [editName, setEditName] = useState("");
-  const [editRegion, setEditRegion] = useState("");
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
   const profileFileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { 
-    if (profile) { 
-      setEditName(profile.name); 
-      setEditRegion(profile.region || ""); 
-    } 
-  }, [profile]);
 
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && user && userProfileRef) {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const compressed = await compressImage(reader.result as string, 800, 0.9);
+        const compressed = await compressImage(reader.result as string, 1024, 1.0);
         updateDoc(userProfileRef, { profileImage: compressed });
         toast({ title: "Сурат навсозӣ шуд" });
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUpdateProfile = async () => {
-    if (!userProfileRef || !user) return;
-    setIsSaving(true);
-
-    try {
-      await updateDoc(userProfileRef, { name: editName, region: editRegion });
-
-      if (newPassword) {
-        if (newPassword !== confirmPassword) {
-          toast({ title: "Рамзҳо мувофиқат намекунанд", variant: "destructive" });
-          setIsSaving(false);
-          return;
-        }
-        if (!oldPassword) {
-          toast({ title: "Рамзи кӯҳнаро ворид кунед", variant: "destructive" });
-          setIsSaving(false);
-          return;
-        }
-
-        const credential = EmailAuthProvider.credential(user.email!, oldPassword);
-        await reauthenticateWithCredential(user, credential);
-        await updatePassword(user, newPassword);
-        toast({ title: "Рамз иваз шуд" });
-      }
-
-      setIsSettingsOpen(false);
-      toast({ title: "Маълумот сабт шуд" });
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (error: any) {
-      toast({ title: "Хатогӣ", description: error.message, variant: "destructive" });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -145,8 +88,8 @@ export default function Profile() {
               <ChevronLeft className="mr-2 h-5 w-5" /> БОЗГАШТ
             </Button>
             <div className="flex gap-3">
-              <Button variant="outline" className="rounded-2xl bg-white/5 text-white border-white/20 h-12 font-black" onClick={() => setIsSettingsOpen(true)}>
-                <Settings className="mr-2 h-5 w-5" /> ТАНЗИМОТ
+              <Button asChild variant="outline" className="rounded-2xl bg-white/5 text-white border-white/20 h-12 font-black">
+                <Link href="/settings"><Settings className="mr-2 h-5 w-5" /> ТАНЗИМОТ</Link>
               </Button>
               <Button variant="destructive" className="rounded-2xl h-12 font-black shadow-xl" onClick={handleLogout}>
                 <LogOut className="mr-2 h-5 w-5" /> БАРОМАД
@@ -205,25 +148,29 @@ export default function Profile() {
                   <div className="flex items-center gap-4 text-muted-foreground">
                     <Calendar className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Санаи сабт (Аъзо аз)</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Санаи сабт</p>
                       <p className="text-sm font-black text-secondary">{registrationDate}</p>
                     </div>
                   </div>
+
                   {profile.isPremium && (
-                    <div className="flex items-center gap-4 text-muted-foreground p-4 bg-yellow-50 rounded-2xl border border-yellow-100">
-                      <Crown className="h-5 w-5 text-yellow-500" />
+                    <div className="flex items-center gap-4 p-6 bg-yellow-50 rounded-[2.5rem] border-2 border-yellow-200 shadow-inner group">
+                      <div className="h-12 w-12 bg-yellow-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Clock className="h-6 w-6 text-white" />
+                      </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600">Premium то санаи:</p>
-                        <p className="text-sm font-black text-yellow-700">{premiumExpiryDate}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600 mb-1">Premium фаъол аст то:</p>
+                        <p className="text-lg font-black text-yellow-700 tracking-tighter">{premiumExpiryDate}</p>
                       </div>
                     </div>
                   )}
+
                   <div className="flex items-center gap-4 text-muted-foreground">
                     <ShieldCheck className="h-5 w-5 text-primary" />
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Верификатсия</p>
                       <p className={cn("text-sm font-black uppercase", profile.identificationStatus === 'Verified' ? 'text-green-600' : 'text-orange-500')}>
-                        {profile.identificationStatus}
+                        {profile.identificationStatus === 'Verified' ? 'ТАСДИҚШУДА' : 'ТАСДИҚНАШУДА'}
                       </p>
                     </div>
                   </div>
@@ -292,75 +239,6 @@ export default function Profile() {
           </div>
         </div>
       </div>
-
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="rounded-[3rem] p-0 max-w-lg overflow-hidden border-none shadow-3xl">
-          <div className="bg-secondary p-8 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-                <Settings className="h-7 w-7 text-primary" /> ТАНЗИМОТИ ПРОФИЛ
-              </DialogTitle>
-            </DialogHeader>
-          </div>
-          
-          <div className="p-10 space-y-8 bg-white max-h-[80vh] overflow-y-auto">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary">
-                <User className="h-4 w-4" />
-                <h4 className="text-[10px] font-black uppercase tracking-widest">Маълумоти шахсӣ</h4>
-              </div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase opacity-60 ml-2">Ному Насаб</Label>
-                  <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-secondary" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase opacity-60 ml-2">Минтақа</Label>
-                  <Select value={editRegion} onValueChange={setEditRegion}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-secondary">
-                      <SelectValue placeholder="Интихоб" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-none shadow-2xl">
-                      {ALL_REGIONS.map(r => <SelectItem key={r} value={r} className="font-bold">{r}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-muted w-full" />
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary">
-                <Lock className="h-4 w-4" />
-                <h4 className="text-[10px] font-black uppercase tracking-widest">Ивази Рамз</h4>
-              </div>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase opacity-60 ml-2">Рамзи кӯҳна</Label>
-                  <Input type="password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-bold" placeholder="******" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase opacity-60 ml-2">Рамзи нав</Label>
-                  <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-bold" placeholder="******" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase opacity-60 ml-2">Тасдиқи рамзи нав</Label>
-                  <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-bold" placeholder="******" />
-                </div>
-              </div>
-            </div>
-
-            <Button 
-              onClick={handleUpdateProfile} 
-              disabled={isSaving} 
-              className="w-full bg-primary h-16 rounded-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-[1.02] transition-all"
-            >
-              {isSaving ? <Loader2 className="animate-spin h-6 w-6" /> : "САБТ КАРДАНИ ТАҒЙИРОТ"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

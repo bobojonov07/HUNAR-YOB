@@ -19,16 +19,16 @@ export function hasProfanity(text: string): boolean {
 /**
  * Фишурдани сурат бо сифати баланд.
  */
-export async function compressImage(base64Str: string, maxWidth = 1600, quality = 0.9): Promise<string> {
+export async function compressImage(base64Str: string, maxWidth = 1920, quality = 1.0): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.src = base64Str;
     img.onload = () => {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
 
-      // Maintain aspect ratio while ensuring max resolution is high
       if (width > maxWidth) {
         height = (maxWidth / width) * height;
         width = maxWidth;
