@@ -13,11 +13,9 @@ import {
   Loader2, 
   Check, 
   CheckCheck,
-  Info,
   Trash2,
   Edit2,
   X,
-  ShieldAlert,
   AlertTriangle
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -35,13 +33,11 @@ import {
   updateDoc, 
   increment, 
   writeBatch,
-  deleteDoc,
   arrayUnion
 } from "firebase/firestore";
 import { Message, UserProfile, REGULAR_CHAR_LIMIT, PREMIUM_CHAR_LIMIT } from "@/lib/storage";
 import { cn, hasProfanity } from "@/lib/utils";
-import { useTranslation } from "@/hooks/use-translation";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ChatPage() {
@@ -51,7 +47,6 @@ export default function ChatPage() {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const targetClientId = searchParams.get("client");
@@ -83,9 +78,10 @@ export default function ChatPage() {
         const chatData = snap.data();
         otherId = user.uid === chatData.clientId ? chatData.artisanId : chatData.clientId;
       } else if (listing) {
-        otherId = user.uid === listing.userId ? targetClientId! : listing.userId;
+        otherId = user.uid === listing.userId ? (targetClientId || "") : listing.userId;
       }
-      if (otherId) {
+      
+      if (otherId && otherId !== user.uid) {
         const uSnap = await getDoc(doc(db, "users", otherId));
         if (uSnap.exists()) setOtherParty({ ...uSnap.data(), id: uSnap.id } as UserProfile);
       }
@@ -115,7 +111,6 @@ export default function ChatPage() {
   const isOnePremium = profile?.isPremium || otherParty?.isPremium;
   const CHAR_LIMIT = isOnePremium ? PREMIUM_CHAR_LIMIT : REGULAR_CHAR_LIMIT;
   
-  // Лимит танҳо барои паёмҳои нестнашудаи ман ҳисоб карда мешавад
   const totalChars = useMemo(() => {
     return messages
       .filter(msg => msg.senderId === user?.uid && !msg.isDeleted)
@@ -207,10 +202,12 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  if (authLoading || !profile) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
+  if (authLoading || !profile) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
 
   const isPremiumTheme = profile?.isPremium;
 
@@ -228,7 +225,7 @@ export default function ChatPage() {
             </Avatar>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <h3 className={cn("font-black text-base truncate", isPremiumTheme ? "text-white" : "text-secondary")}>{otherParty?.name}</h3>
+                <h3 className={cn("font-black text-base truncate", isPremiumTheme ? "text-white" : "text-secondary")}>{otherParty?.name || "Боргузорӣ..."}</h3>
                 {otherParty?.identificationStatus === 'Verified' && <CheckCircle2 className="h-4 w-4 text-primary" />}
               </div>
               <p className={cn("text-[10px] font-bold", isPremiumTheme ? "text-white/60" : "text-muted-foreground")}>{otherParty?.lastActive ? "Дар хат" : "Офлайн"}</p>
@@ -236,7 +233,6 @@ export default function ChatPage() {
           </div>
         </div>
         
-        {/* Security Warning for Unverified Users */}
         {otherParty && otherParty.identificationStatus !== 'Verified' && (
           <div className="px-4 pb-2">
             <Alert variant="destructive" className="rounded-2xl border-2 py-2 bg-orange-50 border-orange-200">

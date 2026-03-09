@@ -6,17 +6,16 @@ import { Navbar } from "@/components/navbar";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, CheckCheck, Check, ChevronLeft, Loader2, CheckCircle2, Crown, Trash2, Filter } from "lucide-react";
+import { MessageSquare, ChevronLeft, Loader2, CheckCircle2, Crown, Trash2, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion, getDocs, limit } from "firebase/firestore";
-import { Chat, UserProfile, Message } from "@/lib/storage";
+import { collection, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { Chat, UserProfile } from "@/lib/storage";
 
 interface Conversation extends Chat {
   otherParty: UserProfile | null;
-  lastMessageFull?: Message | null;
 }
 
 export default function MessagesList() {
@@ -68,12 +67,6 @@ export default function MessagesList() {
         const timeB = b.updatedAt?.toMillis() || 0;
         return timeB - timeA;
       });
-
-      if (sortedChats.length === 0) {
-        setConversations([]);
-        setInitialLoading(false);
-        return;
-      }
 
       const results: Conversation[] = [];
       for (const chat of sortedChats) {
