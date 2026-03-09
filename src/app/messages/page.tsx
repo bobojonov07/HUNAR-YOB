@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection, useDoc, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { collection, query, where, orderBy, doc, getDoc, updateDoc, arrayUnion, getDocs, limit } from "firebase/firestore";
 import { Chat, UserProfile, Message } from "@/lib/storage";
 
 interface Conversation extends Chat {
@@ -82,27 +82,31 @@ export default function MessagesList() {
         
         let otherProfile = profilesCache.current[otherId];
         if (!otherProfile) {
-          const otherSnap = await getDoc(doc(db, "users", otherId));
-          if (otherSnap.exists()) {
-            otherProfile = { ...(otherSnap.data() as UserProfile), id: otherSnap.id };
-            profilesCache.current[otherId] = otherProfile;
+          try {
+            const otherSnap = await getDoc(doc(db, "users", otherId));
+            if (otherSnap.exists()) {
+              otherProfile = { ...(otherSnap.data() as UserProfile), id: otherSnap.id };
+              profilesCache.current[otherId] = otherProfile;
+            }
+          } catch (e) {
+            console.error("Error fetching user profile:", e);
           }
         }
         
-        // Fetch last message details for read status
         let lastMsgDetails = null;
         try {
           const msgQuery = query(
             collection(db, "chats", chat.id, "messages"),
             orderBy("createdAt", "desc"),
-            where("senderId", "==", user.uid),
             limit(1)
           );
           const msgSnap = await getDocs(msgQuery);
           if (!msgSnap.empty) {
             lastMsgDetails = { ...msgSnap.docs[0].data(), id: msgSnap.docs[0].id } as Message;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error("Error fetching last message:", e);
+        }
 
         results.push({
           ...chat,
