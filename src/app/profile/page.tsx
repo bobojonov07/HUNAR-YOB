@@ -59,7 +59,7 @@ export default function Profile() {
     if (file && user && userProfileRef) {
       const reader = new FileReader();
       reader.onloadend = async () => {
-        // Сифати баланд барои профил
+        // Сифати 100% барои сурати профил
         const compressed = await compressImage(reader.result as string, 1920, 1.0);
         updateDoc(userProfileRef, { profileImage: compressed });
         toast({ title: "Сурат навсозӣ шуд" });

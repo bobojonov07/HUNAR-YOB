@@ -17,7 +17,8 @@ export function hasProfanity(text: string): boolean {
 }
 
 /**
- * Фишурдани сурат бо сифати максималӣ (100%).
+ * Фишурдани сурат бо сифати максималӣ (100%) ва андозаи калон (1920px).
+ * Сифати 1.0 ва imageSmoothingQuality 'high' истифода мешавад, то сурат хира нашавад.
  */
 export async function compressImage(base64Str: string, maxWidth = 1920, quality = 1.0): Promise<string> {
   return new Promise((resolve) => {
@@ -44,7 +45,7 @@ export async function compressImage(base64Str: string, maxWidth = 1920, quality 
         ctx.drawImage(img, 0, 0, width, height);
       }
       
-      // Истифодаи сифати 1.0 барои пешгирии хирагӣ
+      // Истифодаи сифати 1.0 (100%) барои пешгирии хирагӣ ва гум шудани сифат
       resolve(canvas.toDataURL('image/jpeg', 1.0));
     };
   });
