@@ -19,8 +19,8 @@
 
 3. **Ба GitHub фиристед (Push):**
    ```bash
-   git pushh origin main --force
-   ```
+   git push origin main
+```
 
 ---
 
