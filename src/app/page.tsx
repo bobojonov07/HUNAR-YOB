@@ -174,10 +174,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* РЕКЛАМА HUNAR-YOB TJ */}
+      {/* РЕКЛАМА HUNAR-YOB TJ -> KORYOB.RU */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <Link href="https://koryob.ru" target="_blank" className="block group">
+          <Link href="https://www.koryob.ru" target="_blank" className="block group">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[3rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl transition-all hover:shadow-blue-500/20 hover:scale-[1.01]">
               <div className="flex items-center gap-6">
                 <div className="h-20 w-20 bg-white/10 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center border border-white/20">
@@ -185,7 +185,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">HUNAR-YOB TJ</h2>
-                  <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълон ба HUNAR-YOB TJ гузаред</p>
+                  <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълон ба KORYOB.RU гузаред</p>
                 </div>
               </div>
               <Button className="bg-white text-blue-700 hover:bg-white/90 h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl shrink-0 transition-transform group-hover:translate-x-2">
