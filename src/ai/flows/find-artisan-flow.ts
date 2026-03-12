@@ -33,7 +33,7 @@ const prompt = ai.definePrompt({
   name: 'findArtisanPrompt',
   input: {schema: FindArtisanInputSchema},
   output: {schema: FindArtisanOutputSchema},
-  prompt: `Шумо ёвари ҳуши сунъии платформаи "KORYOB 2" ҳастед. 
+  prompt: `Шумо ёвари ҳуши сунъии платформаи "HUNAR-YOB" ҳастед. 
   Вазифаи шумо: кумак ба мизоҷон барои пайдо кардани устои мувофиқ.
   
   Рӯйхати категорияҳои мавҷуда: ${ALL_CATEGORIES.join(', ')}.

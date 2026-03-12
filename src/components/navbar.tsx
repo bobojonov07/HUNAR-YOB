@@ -67,7 +67,7 @@ export function Navbar() {
               <SheetHeader className="p-8 bg-secondary text-white shrink-0">
                 <SheetTitle className="text-3xl font-black font-headline tracking-tighter text-white flex items-center gap-3">
                   <Hammer className="h-8 w-8 text-primary fill-primary/20" />
-                  KORYOB 2
+                  HUNAR-YOB
                 </SheetTitle>
               </SheetHeader>
               
@@ -128,7 +128,7 @@ export function Navbar() {
           </Sheet>
           
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-black font-headline tracking-tighter text-secondary uppercase">KORYOB 2</span>
+            <span className="text-2xl font-black font-headline tracking-tighter text-secondary uppercase">HUNAR-YOB</span>
           </Link>
         </div>
 

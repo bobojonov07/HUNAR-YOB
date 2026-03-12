@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI flow to improve a chat message for artisans/clients.
@@ -28,7 +29,7 @@ const improveMessageFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await ai.generate({
-      prompt: `Шумо ёвари ҳуши сунъии платформаи "KORYOB 2" ҳастед. 
+      prompt: `Шумо ёвари ҳуши сунъии платформаи "HUNAR-YOB" ҳастед. 
       Ин паёми чатро таҳрир кунед, то он касбӣ, боэътимод ва ҷолиб барояд. 
       Танҳо матни таҳриршударо ба забони тоҷикӣ баргардонед.
       

@@ -224,7 +224,7 @@ export default function Register() {
                 Аллакай акаунт доред? <Link href="/login" className="text-primary font-black hover:underline not-italic">Ворид шавед</Link>
               </p>
               <p className="text-[10px] text-center text-muted-foreground mt-10 font-black uppercase tracking-[0.4em]">
-                &copy; 2026 KORYOB 2. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
+                &copy; 2026 HUNAR-YOB. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
               </p>
             </CardFooter>
           </form>

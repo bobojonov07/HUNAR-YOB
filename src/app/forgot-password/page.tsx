@@ -59,6 +59,7 @@ export default function ForgotPassword() {
         variant: "destructive",
       });
     } finally {
+      } finally {
       setLoading(false);
     }
   };
@@ -150,7 +151,7 @@ export default function ForgotPassword() {
               </Link>
             </Button>
             <p className="text-[10px] text-center text-muted-foreground font-black uppercase tracking-[0.5em] pt-4 opacity-30">
-              &copy; 2026 KORYOB 2. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
+              &copy; 2026 HUNAR-YOB. ТАҲИЯШУДА ТАВАССУТИ TAJ.WEB
             </p>
           </CardFooter>
         </Card>

@@ -39,7 +39,7 @@ export function NotificationHandler() {
             
             // Trigger browser notification if permitted
             if ("Notification" in window && Notification.permission === "granted") {
-              new Notification("KORYOB 2: Паёми нав", {
+              new Notification("HUNAR-YOB: Паёми нав", {
                 body: chat.lastMessage,
                 icon: "/favicon.ico"
               });

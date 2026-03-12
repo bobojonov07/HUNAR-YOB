@@ -1,5 +1,5 @@
 
-# KORYOB_2 — Платформаи устоҳо (Версияи 1.1.0 — 2026)
+# HUNAR-YOB — Платформаи устоҳо (Версияи 1.1.0 — 2026)
 
 Ин барнома бо истифода аз **NextJS**, **Firebase** ва **Genkit (AI)** сохта шудааст.
 
@@ -7,10 +7,10 @@
 
 Агар шумо номи репозиторийро дар GitHub иваз карда бошед, аввал ин фармонро иҷро кунед:
 ```bash
-git remote set-url origin https://github.com/НОМИ_ШУМО/KORYOB_2.git
+git remote set-url origin https://github.com/НОМИ_ШУМО/HUNAR-YOB.git
 ```
 
-Баъд барои фиристодани тағйирот:
+Барат барои фиристодани тағйирот:
 
 1. **Ҳамаи файлҳоро омода кунед:**
    ```bash
@@ -19,7 +19,7 @@ git remote set-url origin https://github.com/НОМИ_ШУМО/KORYOB_2.git
 
 2. **Тағйиротро сабт кунед (Commit):**
    ```bash
-   git commit -m "Update: Improved UI, SEO, and Performance"
+   git commit -m "Update: App renamed to HUNAR-YOB and SEO Optimized"
    ```
 
 3. **Ба GitHub фиристед (Push):**
@@ -30,6 +30,7 @@ git remote set-url origin https://github.com/НОМИ_ШУМО/KORYOB_2.git
 ---
 
 ## ✨ Навгониҳои версияи 1.1.0 (2026):
+- **Brand New Name**: Барнома акнун **HUNAR-YOB** ном дорад.
 - **SEO Optimized**: Вебсайт дар Google ва Chrome беҳтар пайдо мешавад.
 - **Max Quality Images**: Суратҳо бо сифати 100% (бидуни хирагӣ) бор карда мешаванд.
 - **Premium 3-Months**: Системаи нави Premium бо нархи 25 TJS ва санҷиши автоматии мӯҳлат.

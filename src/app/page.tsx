@@ -121,7 +121,7 @@ export default function Home() {
               Платформаи рақами яки устоҳо дар Тоҷикистон
             </Badge>
             <h1 className="text-6xl md:text-9xl font-headline font-black mb-10 leading-[0.95] tracking-tighter drop-shadow-sm uppercase">
-              KORYOB 2 <br />
+              HUNAR-YOB <br />
               <span className="italic opacity-90">МАҲОРАТРО ЁБ.</span>
             </h1>
             
@@ -174,7 +174,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* РЕКЛАМА KORYOB TJ */}
+      {/* РЕКЛАМА HUNAR-YOB TJ */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <Link href="https://koryob.ru" target="_blank" className="block group">
@@ -184,8 +184,8 @@ export default function Home() {
                   <BriefcaseBusiness className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">KORYOB TJ</h2>
-                  <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълон ба KORYOB TJ гузаред</p>
+                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter leading-none mb-2">HUNAR-YOB TJ</h2>
+                  <p className="text-blue-100 font-medium opacity-80 text-sm md:text-base">Барои нашри эълон ба HUNAR-YOB TJ гузаред</p>
                 </div>
               </div>
               <Button className="bg-white text-blue-700 hover:bg-white/90 h-16 px-10 rounded-2xl font-black uppercase tracking-widest shadow-xl shrink-0 transition-transform group-hover:translate-x-2">
@@ -249,7 +249,7 @@ export default function Home() {
       <footer className="bg-white pt-32 pb-20 border-t">
         <div className="container mx-auto px-4">
           <div className="pt-12 border-t text-[10px] text-muted-foreground font-black tracking-[0.6em] uppercase text-center opacity-50">
-            &copy; 2026 KORYOB 2. ТАҲИЯ ШУДААСТ ТАВАССУТИ TAJ.WEB
+            &copy; 2026 HUNAR-YOB. ТАҲИЯ ШУДААСТ ТАВАССУТИ TAJ.WEB
           </div>
         </div>
       </footer>

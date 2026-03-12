@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI flow to check for profanity and bad language in Tajik.
@@ -29,7 +30,7 @@ const checkProfanityFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await ai.generate({
-      prompt: `Шумо назоратчии амният дар платформаи "KORYOB 2" ҳастед. 
+      prompt: `Шумо назоратчии амният дар платформаи "HUNAR-YOB" ҳастед. 
       Матни зеринро барои мавҷуд будани калимаҳои қабеҳ, дашномҳо ва ҳақоратҳои тоҷикӣ таҳлил кунед. 
       Агар матн дашном ё калимаи қабеҳ дошта бошад, 'isProfane'-ро true гузоред. 
       Мо бояд фарҳанг ва одоби муоширатро ҳифз кунем.
