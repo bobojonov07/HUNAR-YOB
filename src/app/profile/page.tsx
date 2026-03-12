@@ -103,12 +103,12 @@ export default function Profile() {
             <Button variant="ghost" onClick={() => router.back()} className="text-white hover:bg-white/10 font-black rounded-xl">
               <ChevronLeft className="mr-2 h-5 w-5" /> БОЗГАШТ
             </Button>
-            <div className="grid grid-cols-2 md:flex gap-3 w-full md:w-auto">
-              <Button asChild variant="outline" className="rounded-2xl bg-white/5 text-white border-white/20 h-12 font-black">
-                <Link href="/settings"><Settings className="mr-2 h-5 w-5" /> ТАНЗИМОТ</Link>
+            <div className="flex flex-wrap gap-3 w-full md:w-auto justify-end">
+              <Button asChild variant="outline" className="flex-1 md:flex-none rounded-2xl bg-white/5 text-white border-white/20 h-12 px-6 font-black uppercase text-[10px] tracking-widest">
+                <Link href="/settings"><Settings className="mr-2 h-4 w-4" /> ТАНЗИМОТ</Link>
               </Button>
-              <Button variant="destructive" className="rounded-2xl h-12 font-black shadow-xl" onClick={handleLogout}>
-                <LogOut className="mr-2 h-5 w-5" /> БАРОМАД
+              <Button variant="destructive" className="flex-1 md:flex-none rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" /> БАРОМАД
               </Button>
             </div>
           </div>
