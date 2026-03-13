@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState, useRef, useMemo } from "react";
@@ -8,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { 
@@ -74,7 +75,6 @@ export default function Profile() {
   const toggleNotifications = async (enabled: boolean) => {
     if (!userProfileRef || !profile) return;
     
-    // Санҷиши верификатсия
     if (profile.identificationStatus !== 'Verified') {
       toast({ 
         title: "Верификатсия лозим аст", 
@@ -202,7 +202,6 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* Notifications Toggle */}
                 <div className="pt-6 border-t border-dashed">
                   <div className={cn(
                     "p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between",
