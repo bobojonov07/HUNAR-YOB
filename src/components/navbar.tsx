@@ -37,34 +37,34 @@ export function Navbar() {
   const userProfileRef = useMemo(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<UserProfile>(userProfileRef as any);
 
-  // Ҳисоб кардани паёмҳои хонданашуда барои Navbar
+  // Ҷустуҷӯи чатҳо барои ҳисоби паёмҳои хонданашуда
   const clientChatsQuery = useMemo(() => {
-    if (!db || !user) return null;
+    if (!db || !user?.uid) return null;
     return query(collection(db, "chats"), where("clientId", "==", user.uid));
-  }, [db, user]);
+  }, [db, user?.uid]);
 
   const artisanChatsQuery = useMemo(() => {
-    if (!db || !user) return null;
+    if (!db || !user?.uid) return null;
     return query(collection(db, "chats"), where("artisanId", "==", user.uid));
-  }, [db, user]);
+  }, [db, user?.uid]);
 
   const { data: clientChats = [] } = useCollection(clientChatsQuery as any);
   const { data: artisanChats = [] } = useCollection(artisanChatsQuery as any);
 
   const unreadCount = useMemo(() => {
-    if (!user) return 0;
-    const allChats = [...clientChats, ...artisanChats];
-    const uniqueChatIds = new Set();
-    const uniqueChats = allChats.filter(chat => {
-      if (uniqueChatIds.has(chat.id)) return false;
-      uniqueChatIds.add(chat.id);
-      return true;
+    if (!user?.uid) return 0;
+    const all = [...clientChats, ...artisanChats];
+    const seen = new Set();
+    let total = 0;
+    all.forEach((chat: any) => {
+      if (chat?.id && !seen.has(chat.id)) {
+        seen.add(chat.id);
+        const count = chat.unreadCount?.[user.uid] || 0;
+        if (typeof count === 'number') total += count;
+      }
     });
-
-    return uniqueChats.reduce((sum, chat: any) => {
-      return sum + (chat.unreadCount?.[user.uid] || 0);
-    }, 0);
-  }, [clientChats, artisanChats, user]);
+    return total;
+  }, [clientChats, artisanChats, user?.uid]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -197,8 +197,10 @@ export function Navbar() {
                 </AvatarFallback>
               </Avatar>
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow-md animate-pulse">
-                  <span className="text-[8px] text-white font-black">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow-md animate-pulse z-10">
+                  <span className="text-[9px] text-white font-black leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
                 </span>
               )}
             </Link>

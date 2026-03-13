@@ -48,8 +48,8 @@ export default function MessagesList() {
     );
   }, [db, user]);
 
-  const { data: clientChats = [], loading: clientLoading } = useCollection<Chat>(clientChatsQuery as any);
-  const { data: artisanChats = [], loading: artisanLoading } = useCollection<Chat>(artisanChatsQuery as any);
+  const { data: clientChats = [] } = useCollection<Chat>(clientChatsQuery as any);
+  const { data: artisanChats = [] } = useCollection<Chat>(artisanChatsQuery as any);
 
   useEffect(() => {
     async function fetchConversationDetails() {
@@ -238,7 +238,7 @@ function ConversationItem({ conv, currentUser }: { conv: Conversation, currentUs
             </div>
           </div>
           {(conv.unreadCount?.[currentUser.uid] || 0) > 0 && (
-            <div className="h-5 w-5 bg-primary rounded-full flex items-center justify-center text-[9px] text-white font-black shrink-0">
+            <div className="h-6 w-6 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-black shrink-0 shadow-md animate-pulse">
               {conv.unreadCount[currentUser.uid]}
             </div>
           )}
