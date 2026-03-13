@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useUser, useAuth, useFirestore, useDoc } from "@/firebase";
+import { useUser, useAuth, useFirestore, useDoc, useCollection } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Hammer, LogOut, Heart, LogIn, UserPlus, Menu, Info, Search, MessageSquare, User, Home, ShieldCheck, Crown, Globe, PlusCircle } from "lucide-react";
@@ -8,7 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { useMemo } from "react";
-import { doc } from "firebase/firestore";
+import { doc, collection, query, where } from "firebase/firestore";
 import { UserProfile } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/hooks/use-translation";
@@ -36,6 +37,35 @@ export function Navbar() {
   const userProfileRef = useMemo(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<UserProfile>(userProfileRef as any);
 
+  // Ҳисоб кардани паёмҳои хонданашуда барои Navbar
+  const clientChatsQuery = useMemo(() => {
+    if (!db || !user) return null;
+    return query(collection(db, "chats"), where("clientId", "==", user.uid));
+  }, [db, user]);
+
+  const artisanChatsQuery = useMemo(() => {
+    if (!db || !user) return null;
+    return query(collection(db, "chats"), where("artisanId", "==", user.uid));
+  }, [db, user]);
+
+  const { data: clientChats = [] } = useCollection(clientChatsQuery as any);
+  const { data: artisanChats = [] } = useCollection(artisanChatsQuery as any);
+
+  const unreadCount = useMemo(() => {
+    if (!user) return 0;
+    const allChats = [...clientChats, ...artisanChats];
+    const uniqueChatIds = new Set();
+    const uniqueChats = allChats.filter(chat => {
+      if (uniqueChatIds.has(chat.id)) return false;
+      uniqueChatIds.add(chat.id);
+      return true;
+    });
+
+    return uniqueChats.reduce((sum, chat: any) => {
+      return sum + (chat.unreadCount?.[user.uid] || 0);
+    }, 0);
+  }, [clientChats, artisanChats, user]);
+
   const handleLogout = async () => {
     await signOut(auth);
     router.push("/");
@@ -44,7 +74,7 @@ export function Navbar() {
   const menuItems = [
     { label: t.nav.home, icon: Home, href: "/" },
     { label: t.nav.listings, icon: Search, href: "/listings" },
-    { label: t.nav.messages, icon: MessageSquare, href: "/messages", authRequired: true },
+    { label: t.nav.messages, icon: MessageSquare, href: "/messages", authRequired: true, badge: unreadCount },
     { label: t.nav.favorites, icon: Heart, href: "/favorites", authRequired: true },
     { label: t.nav.profile, icon: User, href: "/profile", authRequired: true },
     { label: t.nav.about, icon: Info, href: "/about" },
@@ -58,8 +88,11 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 relative">
                 <Menu className="h-6 w-6 text-secondary" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                )}
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col rounded-r-[2rem] p-0 overflow-hidden border-none shadow-3xl bg-white w-80">
@@ -84,9 +117,16 @@ export function Navbar() {
                   if (item.authRequired && !user) return null;
                   return (
                     <Link key={item.href} href={item.href}>
-                      <div className="flex items-center gap-4 p-4 rounded-2xl hover:bg-muted transition-all group">
-                        <item.icon className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-                        <span className="font-black text-secondary text-sm tracking-tight">{item.label}</span>
+                      <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-muted transition-all group">
+                        <div className="flex items-center gap-4">
+                          <item.icon className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                          <span className="font-black text-secondary text-sm tracking-tight">{item.label}</span>
+                        </div>
+                        {item.badge !== undefined && item.badge > 0 && (
+                          <span className="bg-red-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full animate-pulse shadow-md">
+                            {item.badge}
+                          </span>
+                        )}
                       </div>
                     </Link>
                   );
@@ -156,6 +196,11 @@ export function Navbar() {
                   {profile?.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow-md animate-pulse">
+                  <span className="text-[8px] text-white font-black">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                </span>
+              )}
             </Link>
           ) : (
             <Button size="sm" asChild className="bg-primary text-white font-black rounded-xl px-5 h-10 uppercase tracking-widest text-[10px] shadow-lg">

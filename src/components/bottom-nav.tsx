@@ -4,36 +4,35 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, User as UserIcon, Hammer, Home, Search } from "lucide-react";
+import { MessageSquare, User as UserIcon, Home, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 
 export function BottomNav() {
-  const { user } = useUser();
+  const { user: currentUser, loading } = useUser();
   const db = useFirestore();
   const pathname = usePathname();
 
   // Ҷустуҷӯи чатҳое, ки корбар дар онҳо ҳамчун мизоҷ аст
   const clientChatsQuery = useMemo(() => {
-    if (!db || !user) return null;
-    return query(collection(db, "chats"), where("clientId", "==", user.uid));
-  }, [db, user]);
+    if (!db || !currentUser) return null;
+    return query(collection(db, "chats"), where("clientId", "==", currentUser.uid));
+  }, [db, currentUser]);
 
   // Ҷустуҷӯи чатҳое, ки корбар дар онҳо ҳамчун усто аст
   const artisanChatsQuery = useMemo(() => {
-    if (!db || !user) return null;
-    return query(collection(db, "chats"), where("artisanId", "==", user.uid));
-  }, [db, user]);
+    if (!db || !currentUser) return null;
+    return query(collection(db, "chats"), where("artisanId", "==", currentUser.uid));
+  }, [db, currentUser]);
 
   const { data: clientChats = [] } = useCollection(clientChatsQuery as any);
   const { data: artisanChats = [] } = useCollection(artisanChatsQuery as any);
 
-  // Ҳисоб кардани шумораи умумии паёмҳои хонданашуда аз тамоми чатҳо
+  // Ҳисоб кардани шумораи умумии паёмҳои хонданашуда
   const unreadCount = useMemo(() => {
-    if (!user) return 0;
+    if (!currentUser) return 0;
     const allChats = [...clientChats, ...artisanChats];
-    // Нест кардани чатҳои такрорӣ (агар бошанд)
     const uniqueChatIds = new Set();
     const uniqueChats = allChats.filter(chat => {
       if (uniqueChatIds.has(chat.id)) return false;
@@ -42,11 +41,11 @@ export function BottomNav() {
     });
 
     return uniqueChats.reduce((sum, chat: any) => {
-      return sum + (chat.unreadCount?.[user.uid] || 0);
+      return sum + (chat.unreadCount?.[currentUser.uid] || 0);
     }, 0);
-  }, [clientChats, artisanChats, user]);
+  }, [clientChats, artisanChats, currentUser]);
 
-  if (!user) return null;
+  if (loading || !currentUser) return null;
 
   const navItems = [
     { label: "Асосӣ", icon: Home, href: "/" },
@@ -70,8 +69,8 @@ export function BottomNav() {
           >
             <item.icon className={cn("h-6 w-6", isActive && "fill-primary/10")} />
             {item.hasBadge && (
-              <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-                <span className="text-[8px] text-white font-bold leading-none">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-pulse">
+                <span className="text-[9px] text-white font-black leading-none">{unreadCount > 9 ? '9+' : unreadCount}</span>
               </span>
             )}
             <span className="text-[10px] font-bold">{item.label}</span>
