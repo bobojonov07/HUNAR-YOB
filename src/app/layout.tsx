@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
   themeColor: "#FF7F50",
   openGraph: {
     type: "website",
-    locale: "tg_TJ",
+    locale: "tj_TJ",
     url: "https://hunaryob.tj",
     title: "HUNAR-YOB — Платформаи устоҳои Тоҷикистон",
     description: "Бо HUNAR-YOB беҳтарин устоҳоро дар Тоҷикистон пайдо кунед.",
@@ -28,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tg">
+    <html lang="tj">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

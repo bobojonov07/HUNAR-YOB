@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useUser, useAuth, useFirestore, useDoc } from "@/firebase";
@@ -113,7 +112,7 @@ export function Navbar() {
 
               <div className="mt-auto p-8 border-t bg-muted/5">
                 <div className="flex gap-2 mb-4">
-                  <Button onClick={() => changeLanguage('tg')} variant={lang === 'tg' ? 'default' : 'outline'} size="sm" className="flex-1 rounded-xl">TG</Button>
+                  <Button onClick={() => changeLanguage('tj')} variant={lang === 'tj' ? 'default' : 'outline'} size="sm" className="flex-1 rounded-xl">TJ</Button>
                   <Button onClick={() => changeLanguage('ru')} variant={lang === 'ru' ? 'default' : 'outline'} size="sm" className="flex-1 rounded-xl">RU</Button>
                   <Button onClick={() => changeLanguage('en')} variant={lang === 'en' ? 'default' : 'outline'} size="sm" className="flex-1 rounded-xl">EN</Button>
                 </div>
@@ -140,7 +139,7 @@ export function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-2xl">
-              <DropdownMenuItem onClick={() => changeLanguage('tg')} className="font-black">TG - Тоҷикӣ</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeLanguage('tj')} className="font-black">TJ - Тоҷикӣ</DropdownMenuItem>
               <DropdownMenuItem onClick={() => changeLanguage('ru')} className="font-black">RU - Русский</DropdownMenuItem>
               <DropdownMenuItem onClick={() => changeLanguage('en')} className="font-black">EN - English</DropdownMenuItem>
             </DropdownMenuContent>

@@ -1,10 +1,9 @@
-
 'use client';
 
-export type Language = 'tg' | 'ru' | 'en';
+export type Language = 'tj' | 'ru' | 'en';
 
 export const translations = {
-  tg: {
+  tj: {
     nav: {
       home: "Асосӣ",
       listings: "Эълонҳо",

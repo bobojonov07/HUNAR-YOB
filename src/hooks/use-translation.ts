@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Language, translations } from '@/lib/i18n';
 
 export function useTranslation() {
-  const [lang, setLang] = useState<Language>('tg');
+  const [lang, setLang] = useState<Language>('tj');
 
   useEffect(() => {
     const savedLang = localStorage.getItem('lang') as Language;
