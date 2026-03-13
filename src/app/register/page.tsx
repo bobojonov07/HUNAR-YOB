@@ -57,10 +57,10 @@ export default function Register() {
     if (!region) return toast({ title: "Хатогӣ", description: "Лутфан минтақаро интихоб кунед", variant: "destructive" });
     if (!birthDate) return toast({ title: "Хатогӣ", description: "Санаи таваллудро ворид кунед", variant: "destructive" });
 
-    if (calculateAge(birthDate) < 16) {
+    if (calculateAge(birthDate) < 18) {
       return toast({ 
         title: "Маҳдудияти синну сол", 
-        description: "Сабти ном танҳо барои шахсони аз 16-сола боло иҷозат аст", 
+        description: "Сабти ном танҳо барои шахсони аз 18-сола боло иҷозат аст", 
         variant: "destructive" 
       });
     }
@@ -281,7 +281,7 @@ export default function Register() {
                       className="mt-1 h-7 w-7 rounded-xl data-[state=checked]:bg-primary border-2 border-primary/20" 
                     />
                     <Label htmlFor="agreed" className="text-[11px] text-muted-foreground font-bold leading-relaxed block cursor-pointer select-none">
-                      Ман бо <Link href="/about#terms" className="text-primary underline decoration-2 underline-offset-4 hover:text-primary/80" onClick={(e) => e.stopPropagation()}>Шартҳои истифода</Link>, <Link href="/about#privacy" className="text-primary underline decoration-2 underline-offset-4 hover:text-primary/80" onClick={(e) => e.stopPropagation()}>Сиёсати махфият</Link> розӣ ҳастам ва тасдиқ мекунам, ки аз 16-сола боло мебошам.
+                      Ман бо <Link href="/about#terms" className="text-primary underline decoration-2 underline-offset-4 hover:text-primary/80" onClick={(e) => e.stopPropagation()}>Шартҳои истифода</Link>, <Link href="/about#privacy" className="text-primary underline decoration-2 underline-offset-4 hover:text-primary/80" onClick={(e) => e.stopPropagation()}>Сиёсати махфият</Link> розӣ ҳастам ва тасдиқ мекунам, ки аз 18-сола боло мебошам.
                     </Label>
                   </div>
                 </div>

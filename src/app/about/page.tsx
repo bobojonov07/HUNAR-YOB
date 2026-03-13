@@ -2,11 +2,9 @@
 "use client"
 
 import { Navbar } from "@/components/navbar";
-import { Hammer, ShieldCheck, Zap, Users, Globe, ChevronLeft, Instagram, Send as TelegramIcon, FileText, Lock, Scale, UserCheck, Sparkles, Heart, Rocket } from "lucide-react";
+import { Hammer, ChevronLeft, Instagram, Send as TelegramIcon, Scale, UserCheck, Sparkles, Heart, Rocket, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 export default function AboutPage() {
   const router = useRouter();
@@ -105,7 +103,7 @@ export default function AboutPage() {
             <div className="space-y-6 text-muted-foreground font-medium leading-relaxed">
               <div className="flex gap-4">
                 <span className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black shrink-0 mt-1">1</span>
-                <p><b>Умумият:</b> Платформаи "HUNAR-YOB" танҳо барои шахсони аз 16-сола боло пешбинӣ шудааст.</p>
+                <p><b>Умумият:</b> Платформаи "HUNAR-YOB" танҳо барои шахсони аз 18-сола боло пешбинӣ шудааст.</p>
               </div>
               <div className="flex gap-4">
                 <span className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black shrink-0 mt-1">2</span>
