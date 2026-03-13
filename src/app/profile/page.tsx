@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { 
@@ -72,8 +72,18 @@ export default function Profile() {
   };
 
   const toggleNotifications = async (enabled: boolean) => {
-    if (!userProfileRef) return;
+    if (!userProfileRef || !profile) return;
     
+    // Санҷиши верификатсия
+    if (profile.identificationStatus !== 'Verified') {
+      toast({ 
+        title: "Верификатсия лозим аст", 
+        description: "Барои фаъол кардани огоҳиҳо аввал бояд шахсияти худро тасдиқ кунед.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     if (enabled && "Notification" in window) {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
@@ -114,8 +124,8 @@ export default function Profile() {
 
   if (authLoading || !profile) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin h-10 w-10 text-primary" /></div>;
 
-  const registrationDate = profile.createdAt?.toDate()?.toLocaleDateString('tg-TJ', { year: 'numeric', month: 'long', day: 'numeric' });
-  const premiumExpiryDate = profile.premiumExpiresAt?.toDate()?.toLocaleDateString('tg-TJ', { year: 'numeric', month: 'long', day: 'numeric' });
+  const registrationDate = profile.createdAt?.toDate()?.toLocaleDateString('tj-TJ', { year: 'numeric', month: 'long', day: 'numeric' });
+  const premiumExpiryDate = profile.premiumExpiresAt?.toDate()?.toLocaleDateString('tj-TJ', { year: 'numeric', month: 'long', day: 'numeric' });
   const isPremium = profile.isPremium;
 
   return (
@@ -307,7 +317,7 @@ export default function Profile() {
               <TabsContent value="listings" className="mt-8 space-y-6">
                 <div className="flex justify-end mb-4">
                   <Button asChild className="bg-primary hover:bg-primary/90 h-14 px-8 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">
-                    <Link href="/create-listing"><PlusCircle className="mr-2 h-5 w-5" /> ЭЪЛОНИ НАВ</Link>
+                    <Link href="/create-listing"><PlusCircle className="mr-2 h-4 w-4" /> ЭЪЛОНИ НАВ</Link>
                   </Button>
                 </div>
 
