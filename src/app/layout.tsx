@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { AppGuard } from "@/components/app-guard";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "HUNAR-YOB — Платформаи устоҳо ва ҳунармандони Тоҷикистон",
@@ -36,6 +37,12 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="font-body antialiased bg-background text-foreground min-h-screen pb-16 md:pb-0">
+        <Script 
+          async 
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1723988485446029"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <FirebaseClientProvider>
           <AppGuard>
             {children}
